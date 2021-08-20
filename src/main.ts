@@ -1,4 +1,4 @@
-import { app, BrowserView, BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { ArticleReference } from './models/ArticleReference';
 import { ArticleViewController } from './articleViewController';
@@ -8,6 +8,8 @@ import { SignInEvent, SignInEventResponse, SignInEventType } from './models/Sign
 import { NotificationAuthorizationStatus } from './models/NotificationAuthorizationStatus';
 import { InitializationEvent } from './models/InitializationEvent';
 import { UserAccount } from './models/UserAccount';
+import { WebAuthRequest } from './models/WebAuth';
+import { presentWebAuthSession } from './authentication/webAuthSession';
 
 const defaultWindowBackgroundColor = '#2a2326';
 const defaultWindowSize = {
@@ -178,6 +180,11 @@ async function createAppWindow() {
 					break;
 				case 'readArticle':
 					readArticle(message.data as ArticleReference);
+					break;
+				case 'requestWebAuthentication':
+					const request = message.data as WebAuthRequest;
+					presentWebAuthSession(request)
+						.then(sendResponse);
 					break;
 				case 'signIn':
 					const signInEvent = message.data as SignInEvent;
