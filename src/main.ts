@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import path from 'path';
 import { ArticleReference } from './models/ArticleReference';
 import { ArticleViewController } from './articleViewController';
@@ -11,6 +11,7 @@ import { UserAccount } from './models/UserAccount';
 import { WebAuthRequest } from './models/WebAuth';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
+import { presentExternalUrlSession } from './externalUrlSession';
 
 const defaultWindowBackgroundColor = '#2a2326';
 const defaultWindowSize = {
@@ -178,6 +179,14 @@ async function createAppWindow() {
 					sendResponse(
 						getDeviceInfo()
 					);
+					break;
+				case 'openExternalUrl':
+				case 'openExternalUrlUsingSystem':
+					shell.openExternal(message.data as string);
+					break;
+				case 'openExternalUrlWithCompletionHandler':
+					presentExternalUrlSession(message.data as string)
+						.then(sendResponse);
 					break;
 				case 'readArticle':
 					readArticle(message.data as ArticleReference);
