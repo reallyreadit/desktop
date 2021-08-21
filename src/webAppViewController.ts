@@ -55,9 +55,6 @@ export class WebAppViewController {
 						getDeviceInfo()
 					);
 					break;
-				case 'getVersion':
-					sendResponse('7.0.2');
-					break;
 				case 'initialize':
 					const initializationEvent = message.data as InitializationEvent;
 					if (initializationEvent.user) {
