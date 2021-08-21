@@ -9,7 +9,7 @@ import { NotificationAuthorizationStatus } from './models/NotificationAuthorizat
 import { InitializationEvent } from './models/InitializationEvent';
 import { UserAccount } from './models/UserAccount';
 import { WebAuthRequest } from './models/WebAuth';
-import { presentWebAuthSession } from './authentication/webAuthSession';
+import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 
 const defaultWindowBackgroundColor = '#2a2326';
 const defaultWindowSize = {
@@ -183,7 +183,7 @@ async function createAppWindow() {
 					break;
 				case 'requestWebAuthentication':
 					const request = message.data as WebAuthRequest;
-					presentWebAuthSession(request)
+					presentOauthAuthSession(request)
 						.then(sendResponse);
 					break;
 				case 'signIn':

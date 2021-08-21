@@ -1,10 +1,10 @@
 import { BrowserWindow } from 'electron';
 import { WebAuthRequest, WebAuthResponse } from '../models/WebAuth';
 
-export function presentWebAuthSession(request: WebAuthRequest) {
+export function presentOauthAuthSession(request: WebAuthRequest) {
 	const authWindow = new BrowserWindow({
 		width: 600,
-		height: 400
+		height: 600
 	});
 	return new Promise<WebAuthResponse>(
 		resolve => {
