@@ -35,3 +35,9 @@ export interface Article {
 	proofToken: string | null,
 	imageUrl: string | null
 }
+export interface StarArticleRequest {
+	articleId: number
+}
+export interface ArticleStarredEvent {
+	article: Article
+}

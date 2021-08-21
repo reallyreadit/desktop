@@ -1,3 +1,5 @@
+import { Article } from "./Article";
+
 export interface CommentAddendum {
 	dateCreated: string,
 	textContent: string
@@ -25,4 +27,24 @@ export interface CommentThread {
 	dateDeleted: string | null,
 	children: CommentThread[],
 	isAuthor: boolean
+}
+export interface CommentForm {
+	text: string,
+	articleId: number,
+	parentCommentId: string
+}
+export interface CommentCreationResponse {
+	article: Article,
+	comment: CommentThread
+}
+export interface CommentRevisionForm {
+	commentId: string,
+	text: string
+}
+export interface CommentAddendumForm {
+	commentId: string,
+	text: string
+}
+export interface CommentDeletionForm {
+	commentId: string
 }

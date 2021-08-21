@@ -29,6 +29,21 @@ function getDeviceInfo() {
 	};
 }
 
+function prepareUrl(url: URL) {
+	// convert reallyread.it urls to readup.com
+	url.hostname = url.hostname.replace('reallyread.it', 'dev.readup.com');
+	// verify that the host matches the web server host
+	if (url.hostname !== 'dev.readup.com') {
+		url = new URL('https://dev.readup.com/');
+	}
+	// force https
+	url.protocol = 'https:';
+	// set the client type in the query string
+	url.searchParams.set('clientType', 'App');
+	// return the url
+	return url;
+}
+
 function signIn(user: UserAccount, eventType: SignInEventType) {
 	console.log('[webapp] authenticated');
 }
@@ -39,23 +54,26 @@ function signOut() {
 
 export class WebAppViewController {
 	private _articleViewController: ArticleViewController | undefined;
+	private _hasEstablishedCommunication = false;
 	private readonly _messagingContext = new MessagingContext({
 		executeJavaScript: code => {
 			this._window.webContents.executeJavaScript(code);
 		},
 		ipcChannel: 'web-app',
 		javascriptListenerObject: 'window.reallyreadit.app',
-		onMessage: (message, sendResponse) => {
+		onMessage: async (message, sendResponse) => {
 			switch (message.type) {
 				case 'displayPreferenceChanged':
 					userData.setDisplayPreference(message.data);
 					break;
 				case 'getDeviceInfo':
+					this._hasEstablishedCommunication = true;
 					sendResponse(
 						getDeviceInfo()
 					);
 					break;
 				case 'initialize':
+					this._hasEstablishedCommunication = true;
 					const initializationEvent = message.data as InitializationEvent;
 					if (initializationEvent.user) {
 						signIn(initializationEvent.user, SignInEventType.ExistingUser);
@@ -75,7 +93,7 @@ export class WebAppViewController {
 						.then(sendResponse);
 					break;
 				case 'readArticle':
-					this.readArticle(message.data as ArticleReference);
+					await this.readArticle(message.data as ArticleReference);
 					break;
 				case 'requestAppleIdCredential':
 					presentAppleIdAuthSession()
@@ -129,13 +147,39 @@ export class WebAppViewController {
 		);
 		this._window.loadURL('https://dev.readup.com/?clientType=App')
 	}
-	public readArticle(articleReference: ArticleReference) {
+	private closeReader() {
+		this._articleViewController?.detach(this._window);
+		this._articleViewController = undefined;
+	}
+	public loadUrl(url: URL) {
+		const preparedUrl = prepareUrl(url)
+			.toString();
+		console.log(`[webapp] load url: ${preparedUrl}`);
+		if (this._hasEstablishedCommunication) {
+			this._messagingContext.sendMessage({
+				type: 'loadUrl',
+				data: preparedUrl
+			});
+		} else {
+			this._window.loadURL(preparedUrl);
+		}
+	}
+	public async readArticle(articleReference: ArticleReference) {
 		if (this._articleViewController) {
 			throw new Error('Already reading. Need to implemented article updating.');
 		}
 		this._articleViewController = new ArticleViewController({
 			onArticlePosted: post => {
-
+				this._messagingContext.sendMessage({
+					type: 'articlePosted',
+					data: post
+				});
+			},
+			onArticleStarred: event => {
+				this._messagingContext.sendMessage({
+					type: 'articleStarred',
+					data: event
+				});
 			},
 			onArticleUpdated: event => {
 				this._messagingContext.sendMessage({
@@ -144,29 +188,46 @@ export class WebAppViewController {
 				});
 			},
 			onAuthServiceAccountLinked: association => {
-
+				this._messagingContext.sendMessage({
+					type: 'authServiceAccountLinked',
+					data: association
+				});
 			},
 			onClose: () => {
-				this._articleViewController?.detach(this._window);
-				this._articleViewController = undefined;
+				this.closeReader();
 			},
 			onCommentPosted: comment => {
-
+				this._messagingContext.sendMessage({
+					type: 'commentPosted',
+					data: comment
+				});
 			},
 			onCommentUpdated: comment => {
-
+				this._messagingContext.sendMessage({
+					type: 'commentUpdated',
+					data: comment
+				});
 			},
 			onDisplayPreferenceChanged: preference => {
-
+				this._messagingContext.sendMessage({
+					type: 'displayPreferenceChanged',
+					data: preference
+				});
 			},
 			onNavTo: url => {
-
+				this.closeReader();
+				this.loadUrl(url);
 			},
 			onOpenSubscriptionPrompt: () => {
-
+				this.closeReader();
+				this._messagingContext.sendMessage({
+					type: 'openSubscriptionPrompt',
+					data: true
+				});
 			}
 		});
-		this._articleViewController.attach(this._window, articleReference);
+		await this._articleViewController.attach(this._window);
+		await this._articleViewController.replaceArticle(articleReference);
 	}
 	public get window() {
 		return this._window;
