@@ -4,7 +4,10 @@ import { WebAuthRequest, WebAuthResponse } from '../models/WebAuth';
 export function presentOauthAuthSession(request: WebAuthRequest) {
 	const authWindow = new BrowserWindow({
 		width: 600,
-		height: 600
+		height: 600,
+		webPreferences: {
+			partition: 'oauth'
+		}
 	});
 	return new Promise<WebAuthResponse>(
 		resolve => {

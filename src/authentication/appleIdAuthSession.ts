@@ -5,7 +5,10 @@ import { createQueryString, parseQueryString } from '../routing/queryString';
 export function presentAppleIdAuthSession() {
 	const authWindow = new BrowserWindow({
 		width: 600,
-		height: 600
+		height: 600,
+		webPreferences: {
+			partition: 'apple-id'
+		}
 	});
 	const redirectUrl = 'https://api.readup.com/Auth/AppleWeb';
 	// can't use URLSearchParams here because apple requires spaces be
