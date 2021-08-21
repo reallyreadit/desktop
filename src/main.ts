@@ -10,6 +10,7 @@ import { InitializationEvent } from './models/InitializationEvent';
 import { UserAccount } from './models/UserAccount';
 import { WebAuthRequest } from './models/WebAuth';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
+import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
 
 const defaultWindowBackgroundColor = '#2a2326';
 const defaultWindowSize = {
@@ -180,6 +181,17 @@ async function createAppWindow() {
 					break;
 				case 'readArticle':
 					readArticle(message.data as ArticleReference);
+					break;
+				case 'requestAppleIdCredential':
+					presentAppleIdAuthSession()
+						.then(
+							credential => {
+								messagingContext!.sendMessage({
+									type: 'authenticateAppleIdCredential',
+									data: credential
+								});
+							}
+						);
 					break;
 				case 'requestWebAuthentication':
 					const request = message.data as WebAuthRequest;
