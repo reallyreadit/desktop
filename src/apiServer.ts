@@ -1,4 +1,4 @@
-import got from 'got';
+import got, { CancelableRequest, OptionsOfTextResponseBody } from 'got';
 import { sharedCookieStore } from './sharedCookieStore';
 
 type GotSearchParams = string | Record<string, string | number | boolean | null | undefined> | URLSearchParams | undefined;
@@ -9,6 +9,22 @@ const defaultHeaders = {
 
 function createUrl(path: string) {
 	return 'https://api.dev.readup.com' + path;
+}
+async function createPostOptions<T>(data?: T) {
+	const options: OptionsOfTextResponseBody = {
+		cookieJar: await sharedCookieStore.getStore(),
+		headers: {
+			...defaultHeaders
+		}
+	};
+	if (data) {
+		options.body = JSON.stringify(data);
+		options.headers = {
+			...options.headers,
+			'Content-Type': 'application/json'
+		};
+	}
+	return options;
 }
 
 export const apiServer = {
@@ -24,19 +40,15 @@ export const apiServer = {
 			)
 			.json<T>();
 	},
-	postJson: async <TData, TResult>(path: string, data: TData) => {
-		return await got
-			.post(
-				createUrl(path),
-				{
-					body: JSON.stringify(data),
-					cookieJar: await sharedCookieStore.getStore(),
-					headers: {
-						...defaultHeaders,
-						'Content-Type': 'application/json'
-					},
-				},
-			)
-			.json<TResult>();
-	}
+	post: async <T>(path: string, data?: T) => await got
+		.post(
+			createUrl(path),
+			await createPostOptions(data)
+		),
+	postJson: async <TData, TResult>(path: string, data?: TData) => await got
+		.post(
+			createUrl(path),
+			await createPostOptions(data)
+		)
+		.json<TResult>()
 };
