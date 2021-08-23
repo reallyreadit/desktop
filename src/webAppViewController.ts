@@ -5,7 +5,9 @@ import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 import { presentExternalUrlSession } from './externalUrlSession';
 import { MessagingContext } from './messagingContext';
+import { AppPlatform } from './models/AppPlatform';
 import { ArticleReference } from './models/ArticleReference';
+import { DeviceInfo } from './models/DeviceInfo';
 import { InitializationEvent } from './models/InitializationEvent';
 import { NotificationAuthorizationStatus } from './models/NotificationAuthorizationStatus';
 import { SignInEvent, SignInEventResponse, SignInEventType } from './models/SignInEvent';
@@ -19,12 +21,15 @@ const defaultWindowSize = {
 	height: 600
 };
 const windowTitle = 'Readup';
+const appPlatform = AppPlatform.Windows;
+const appVersion = '1.0.0';
 
-function getDeviceInfo() {
+function getDeviceInfo(): DeviceInfo {
 	return {
-		appVersion: '7.0.2',
+		appPlatform,
+		appVersion,
 		installationId: null,
-		name: 'jeffcamera-desktop',
+		name: '',
 		token: null
 	};
 }
@@ -40,6 +45,8 @@ function prepareUrl(url: URL) {
 	url.protocol = 'https:';
 	// set the client type in the query string
 	url.searchParams.set('clientType', 'App');
+	url.searchParams.set('appPlatform', appPlatform);
+	url.searchParams.set('appVersion', appVersion);
 	// return the url
 	return url;
 }
@@ -145,7 +152,12 @@ export class WebAppViewController {
 				event.preventDefault();
 			}
 		);
-		this._window.loadURL('https://dev.readup.com/?clientType=App')
+		this._window.loadURL(
+			prepareUrl(
+					new URL('https://dev.readup.com/')
+				)
+				.toString()
+		);
 	}
 	private closeReader() {
 		this._articleViewController?.detach(this._window);
