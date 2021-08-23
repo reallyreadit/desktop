@@ -5,6 +5,7 @@ import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 import { presentExternalUrlSession } from './externalUrlSession';
 import { MessagingContext } from './messagingContext';
+import { AppActivationEvent } from './models/AppActivationEvent';
 import { AppPlatform } from './models/AppPlatform';
 import { ArticleReference } from './models/ArticleReference';
 import { DeviceInfo } from './models/DeviceInfo';
@@ -146,12 +147,25 @@ export class WebAppViewController {
 		}
 	});
 	constructor() {
-		this._window.on(
-			'page-title-updated',
-			event => {
-				event.preventDefault();
-			}
-		);
+		this._window
+			.on(
+				'focus',
+				() => {
+					this._messagingContext.sendMessage({
+						type: 'didBecomeActive',
+						data: {
+							badgeCount: 0,
+							newStarCount: 0
+						} as AppActivationEvent
+					});
+				}
+			)
+			.on(
+				'page-title-updated',
+				event => {
+					event.preventDefault();
+				}
+			);
 		this._window.loadURL(
 			prepareUrl(
 					new URL('https://dev.readup.com/')
