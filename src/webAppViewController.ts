@@ -14,6 +14,7 @@ import { NotificationAuthorizationStatus } from './models/NotificationAuthorizat
 import { SignInEvent, SignInEventResponse, SignInEventType } from './models/SignInEvent';
 import { UserAccount } from './models/UserAccount';
 import { WebAuthRequest } from './models/WebAuth';
+import { readerScript } from './readerScript';
 import { userData } from './userData';
 
 const defaultWindowBackgroundColor = '#2a2326';
@@ -158,6 +159,7 @@ export class WebAppViewController {
 							newStarCount: 0
 						} as AppActivationEvent
 					});
+					readerScript.updateScript();
 				}
 			)
 			.on(

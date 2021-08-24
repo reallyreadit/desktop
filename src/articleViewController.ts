@@ -25,6 +25,7 @@ import { presentExternalUrlSession } from './externalUrlSession';
 import { ArticleIssueReportRequest } from './models/ArticleIssueReportRequest';
 import { WebAuthRequest } from './models/WebAuth';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
+import { readerScript } from './readerScript';
 
 export interface ArticleViewControllerParams {
 	onArticlePosted: (post: Post) => void,
@@ -305,15 +306,7 @@ export class ArticleViewController {
 			}
 		);
 		await this._view.webContents.executeJavaScript(
-			await fs.readFile(
-				path.resolve(
-					app.getAppPath(),
-					'content/reader-12.2.1.js'
-				),
-				{
-					encoding: 'utf8'
-				}
-			)
+			await readerScript.getLatestScript()
 		);
 		await fs.unlink(tempFilePath);
 	}

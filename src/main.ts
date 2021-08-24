@@ -1,4 +1,5 @@
 import { app } from 'electron';
+import { readerScript } from './readerScript';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
 
@@ -12,6 +13,7 @@ if (
 			async () => {
 				// Initialize services.
 				await userData.initializeDirectories();
+				await readerScript.initializeDirectories();
 				// Create main view controller.
 				const urlArg = findReadupUrlArg(process.argv);
 				webAppViewController = new WebAppViewController();

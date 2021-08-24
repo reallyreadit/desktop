@@ -2,9 +2,11 @@ import { app } from 'electron';
 import fs from 'fs/promises';
 import path from 'path';
 import { DisplayPreference } from './models/DisplayPreference';
+import { ScriptUpdateRecord } from './readerScript';
 
 const fileNames = {
-	displayPreference: 'displayPreference.json'
+	displayPreference: 'displayPreference.json',
+	readerScriptUpdateRecord: 'readerScriptUpdateRecord.json'
 };
 
 function getFilePath(fileName: string) {
@@ -13,13 +15,19 @@ function getFilePath(fileName: string) {
 		fileName
 	);
 }
-async function getFileContents(fileName: string) {
-	return await fs.readFile(
-		getFilePath(fileName),
-		{
-			encoding: 'utf8'
-		}
-	);
+async function getFileData<T>(fileName: string) {
+	try {
+		return JSON.parse(
+			await fs.readFile(
+				getFilePath(fileName),
+				{
+					encoding: 'utf8'
+				}
+			)
+		) as T;
+	} catch (ex) {
+		return null;
+	}
 }
 async function setFileContents(fileName: string, contents: string) {
 	await fs.writeFile(
@@ -36,13 +44,10 @@ function getUserDataDirectory( ){
 
 export const userData = {
 	getDisplayPreference: async () => {
-		try {
-			return JSON.parse(
-				await getFileContents(fileNames.displayPreference)
-			) as DisplayPreference;
-		} catch (ex) {
-			return null;
-		}
+		return await getFileData<DisplayPreference>(fileNames.displayPreference);
+	},
+	getReaderScriptUpdateRecord: async () => {
+		return await getFileData<ScriptUpdateRecord>(fileNames.readerScriptUpdateRecord);
 	},
 	initializeDirectories: async () => {
 		return fs.mkdir(
@@ -56,6 +61,12 @@ export const userData = {
 		await setFileContents(
 			fileNames.displayPreference,
 			JSON.stringify(preference)
+		);
+	},
+	setReaderScriptUpdateRecord: async (record: ScriptUpdateRecord) => {
+		await setFileContents(
+			fileNames.readerScriptUpdateRecord,
+			JSON.stringify(record)
 		);
 	}
 };
