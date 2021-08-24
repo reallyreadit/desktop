@@ -4,12 +4,12 @@ import path from 'path';
 import { DisplayPreference } from './models/DisplayPreference';
 
 const fileNames = {
-	displayPreference: 'displayPreference'
+	displayPreference: 'displayPreference.json'
 };
 
 function getFilePath(fileName: string) {
 	return path.join(
-		app.getPath('userData'),
+		getUserDataDirectory(),
 		fileName
 	);
 }
@@ -27,6 +27,12 @@ async function setFileContents(fileName: string, contents: string) {
 		contents
 	);
 }
+function getUserDataDirectory( ){
+	return path.join(
+		app.getPath('userData'),
+		'com.readup/userData/v1'
+	);
+}
 
 export const userData = {
 	getDisplayPreference: async () => {
@@ -37,6 +43,14 @@ export const userData = {
 		} catch (ex) {
 			return null;
 		}
+	},
+	initializeDirectories: async () => {
+		return fs.mkdir(
+			getUserDataDirectory(),
+			{
+				recursive: true
+			}
+		);
 	},
 	setDisplayPreference: async (preference: DisplayPreference) => {
 		await setFileContents(

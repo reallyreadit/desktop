@@ -1,4 +1,5 @@
 import { app } from 'electron';
+import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
 
 if (
@@ -9,6 +10,9 @@ if (
 		.whenReady()
 		.then(
 			async () => {
+				// Initialize services.
+				await userData.initializeDirectories();
+				// Create main view controller.
 				const urlArg = findReadupUrlArg(process.argv);
 				webAppViewController = new WebAppViewController();
 				if (
