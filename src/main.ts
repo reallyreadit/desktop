@@ -1,4 +1,5 @@
 import { app } from 'electron';
+import { notifications } from './notifications';
 import { readerScript } from './readerScript';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
@@ -6,6 +7,8 @@ import { WebAppViewController } from './webAppViewController';
 if (
 	app.requestSingleInstanceLock()
 ) {
+	// DEBUG ONLY
+	app.setAppUserModelId(process.execPath);
 	let webAppViewController: WebAppViewController | undefined;
 	app
 		.whenReady()
@@ -24,6 +27,8 @@ if (
 						url: urlArg.searchParams.get('url')!
 					});
 				}
+				// Initialize services.
+				notifications.startChecking();
 			}
 		);
 	app

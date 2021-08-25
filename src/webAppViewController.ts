@@ -5,6 +5,7 @@ import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 import { presentExternalUrlSession } from './externalUrlSession';
 import { MessagingContext } from './messagingContext';
+import { AlertStatus } from './models/AlertStatus';
 import { AppActivationEvent } from './models/AppActivationEvent';
 import { AppPlatform } from './models/AppPlatform';
 import { ArticleReference } from './models/ArticleReference';
@@ -14,6 +15,7 @@ import { NotificationAuthorizationStatus } from './models/NotificationAuthorizat
 import { SignInEvent, SignInEventResponse, SignInEventType } from './models/SignInEvent';
 import { UserAccount } from './models/UserAccount';
 import { WebAuthRequest } from './models/WebAuth';
+import { notifications } from './notifications';
 import { readerScript } from './readerScript';
 import { userData } from './userData';
 
@@ -173,6 +175,19 @@ export class WebAppViewController {
 					new URL('https://dev.readup.com/')
 				)
 				.toString()
+		);
+		notifications.addAlertStatusListener(
+			event => {
+				this._messagingContext.sendMessage({
+					type: 'alertStatusUpdated',
+					data: event.user as AlertStatus
+				});
+			}
+		);
+		notifications.addClickEventListener(
+			event => {
+				this.loadUrl(event.url);
+			}
 		);
 	}
 	private closeReader() {
