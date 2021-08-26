@@ -1,15 +1,19 @@
 import { session } from 'electron';
 import { Cookie, CookieJar } from 'tough-cookie';
 
+async function getAuthCookie() {
+	const authCookies = await session.defaultSession.cookies.get({
+		domain: '.dev.readup.com',
+		name: 'devSessionKey'
+	});
+	return authCookies[0];
+}
+
 export const sharedCookieStore = {
 	getStore: async () => {
 		const
 			cookieJar = new CookieJar(),
-			authCookies = await session.defaultSession.cookies.get({
-				domain: '.dev.readup.com',
-				name: 'devSessionKey'
-			}),
-			authCookie = authCookies[0];
+			authCookie = await getAuthCookie();
 		cookieJar.setCookieSync(
 			new Cookie({
 				key: authCookie.name,
@@ -24,5 +28,8 @@ export const sharedCookieStore = {
 			'https://dev.readup.com/'
 		);
 		return cookieJar;
+	},
+	isAuthenticated: async () => {
+		return !!(await getAuthCookie());
 	}
 };
