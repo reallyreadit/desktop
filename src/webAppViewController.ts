@@ -170,12 +170,6 @@ export class WebAppViewController {
 					event.preventDefault();
 				}
 			);
-		this._window.loadURL(
-			prepareUrl(
-					new URL('https://dev.readup.com/')
-				)
-				.toString()
-		);
 		notifications.addAlertStatusListener(
 			event => {
 				this._messagingContext.sendMessage({
@@ -185,16 +179,17 @@ export class WebAppViewController {
 			}
 		);
 		notifications.addClickEventListener(
-			event => {
-				this.loadUrl(event.url);
+			async event => {
+				this.closeReader();
+				await this.loadUrl(event.url);
 			}
 		);
 	}
-	private closeReader() {
+	public closeReader() {
 		this._articleViewController?.detach(this._window);
 		this._articleViewController = undefined;
 	}
-	public loadUrl(url: URL) {
+	public async loadUrl(url: URL) {
 		const preparedUrl = prepareUrl(url)
 			.toString();
 		console.log(`[webapp] load url: ${preparedUrl}`);
@@ -204,12 +199,13 @@ export class WebAppViewController {
 				data: preparedUrl
 			});
 		} else {
-			this._window.loadURL(preparedUrl);
+			await this._window.loadURL(preparedUrl);
 		}
 	}
 	public async readArticle(articleReference: ArticleReference) {
 		if (this._articleViewController) {
-			throw new Error('Already reading. Need to implemented article updating.');
+			await this._articleViewController.replaceArticle(articleReference);
+			return;
 		}
 		this._articleViewController = new ArticleViewController({
 			onArticlePosted: post => {
@@ -257,9 +253,9 @@ export class WebAppViewController {
 					data: preference
 				});
 			},
-			onNavTo: url => {
+			onNavTo: async url => {
 				this.closeReader();
-				this.loadUrl(url);
+				await this.loadUrl(url);
 			},
 			onOpenSubscriptionPrompt: () => {
 				this.closeReader();
