@@ -1,5 +1,6 @@
 const packager = require('electron-packager');
-const fs = require('fs');
+const childProcess = require('child_process');
+const fs = require('fs/promises');
 const path = require('path');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
@@ -25,44 +26,81 @@ const argv = yargs(
 	.help()
 	.argv;
 
-console.log('Cleaning output directory...');
-fs.rmSync(
-	out,
-	{
-		force: true,
-		recursive: true
-	}
-);
+function cleanBuildDir() {
+	console.log('Cleaning build directory...');
+	return fs.rm(
+		'bin',
+		{
+			force: true,
+			recursive: true
+		}
+	);
+}
 
-console.log('Starting electron-packager...');
-packager({
-	afterCopy: [
-		(buildPath, electronVersion, platform, arch, callback) => {
-			console.log('Writing configuration file...');
-			const appConfig = JSON.parse(
-				fs.readFileSync(
-					`config.${argv.config}.json`,
+function build() {
+	console.log('Building...');
+	 return new Promise(
+		resolve => {
+			childProcess
+				.spawn(
+					'npm run build',
 					{
-						encoding: 'utf8'
+						shell: true,
+						stdio: 'inherit'
 					}
 				)
-			);
-			appConfig['type'] = argv.config;
-			fs.writeFileSync(
-				path.join(buildPath, 'config.json'),
-				JSON.stringify(appConfig)
-			);
-			callback();
+				.on('exit', resolve)
 		}
-	],
-	dir: '.',
-	icon: 'content/Readup.ico',
-	ignore: [
-		/^\/\./,
-		/^\/src/,
-		/^\/package\.js$/,
-		/^\/config\.[^.]+\.json/,
-		/^\/tsconfig\.json/
-	],
-	out
-});
+	);
+}
+
+function cleanPackageDir() {
+	console.log('Cleaning package directory...');
+	return fs.rm(
+		out,
+		{
+			force: true,
+			recursive: true
+		}
+	);
+}
+
+function package() {
+	console.log('Starting electron-packager...');
+	return packager({
+		afterCopy: [
+			async (buildPath, electronVersion, platform, arch, callback) => {
+				console.log('Writing configuration file...');
+				const appConfig = JSON.parse(
+					await fs.readFile(
+						`config.${argv.config}.json`,
+						{
+							encoding: 'utf8'
+						}
+					)
+				);
+				appConfig['type'] = argv.config;
+				await fs.writeFile(
+					path.join(buildPath, 'config.json'),
+					JSON.stringify(appConfig)
+				);
+				callback();
+			}
+		],
+		dir: '.',
+		icon: 'content/Readup.ico',
+		ignore: [
+			/^\/\./,
+			/^\/src/,
+			/^\/package\.js$/,
+			/^\/config\.[^.]+\.json/,
+			/^\/tsconfig\.json/
+		],
+		out
+	});
+}
+
+cleanBuildDir()
+	.then(build)
+	.then(cleanPackageDir)
+	.then(package);
