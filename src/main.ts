@@ -1,5 +1,6 @@
 import { app } from 'electron';
 import { AppConfig, appConfig } from './appConfig';
+import { ArticleReference } from './models/ArticleReference';
 import { notifications } from './notifications';
 import { readerScript } from './readerScript';
 import { createUrl } from './routing/HttpEndpoint';
@@ -7,13 +8,21 @@ import { sharedCookieStore } from './sharedCookieStore';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
 
-async function loadUrlFromArguments(webAppViewController: WebAppViewController, argv: string[]) {
+interface ArgumentsUrlResult {
+	main: URL | null,
+	article: ArticleReference | null
+}
+
+async function loadUrlFromArguments(webAppViewController: WebAppViewController, argv: string[]): Promise<ArgumentsUrlResult> {
 	const webServerUrl = createUrl(appConfig.webServer);
 	let urlArg = argv.find(
 		arg => arg.startsWith('readup://') || arg.startsWith(webServerUrl.href)
 	);
 	if (!urlArg) {
-		return false;
+		return {
+			main: null,
+			article: null
+		};
 	}
 	if (
 		urlArg.startsWith(
@@ -33,10 +42,16 @@ async function loadUrlFromArguments(webAppViewController: WebAppViewController, 
 		url.searchParams.has('url') &&
 		await sharedCookieStore.isAuthenticated()
 	) {
-		await webAppViewController.readArticle({
+		const articleReference = {
 			url: url.searchParams.get('url')!
-		});
-	} else if (
+		};
+		await webAppViewController.readArticle(articleReference);
+		return {
+			main: null,
+			article: articleReference
+		};
+	}
+	if (
 		url.pathname.startsWith('/read') &&
 		(pathComponents = url.pathname.split('/')).length === 4 &&
 		await sharedCookieStore.isAuthenticated()
@@ -45,16 +60,23 @@ async function loadUrlFromArguments(webAppViewController: WebAppViewController, 
 			slug = pathComponents[2] + '_' + pathComponents[3],
 			commentsUrl = new URL(
 				url.href.replace(/^(https?:\/\/[^\/]+)\/read\/(.+)/, '$1/comments/$2')
-			);
+			),
+			articleReference = {
+				slug
+			};
 		await webAppViewController.loadUrl(commentsUrl);
-		await webAppViewController.readArticle({
-			slug
-		});
-	} else {
-		webAppViewController.closeReader();
-		await webAppViewController.loadUrl(url);
+		await webAppViewController.readArticle(articleReference);
+		return {
+			main: commentsUrl,
+			article: articleReference
+		};
 	}
-	return true;
+	webAppViewController.closeReader();
+	await webAppViewController.loadUrl(url);
+	return {
+		main: url,
+		article: null
+	};
 }
 
 if (
@@ -74,9 +96,8 @@ if (
 				await readerScript.initializeDirectories();
 				// Create main view controller.
 				webAppViewController = new WebAppViewController();
-				if (
-					!(await loadUrlFromArguments(webAppViewController, process.argv))
-				) {
+				const argUrlResult = await loadUrlFromArguments(webAppViewController, process.argv);
+				if (!argUrlResult.main) {
 					webAppViewController.loadUrl(
 						createUrl(appConfig.webServer)
 					);
@@ -89,10 +110,11 @@ if (
 		.on(
 			'second-instance',
 			async (_, argv) => {
-				if (
-					webAppViewController &&
-					(await loadUrlFromArguments(webAppViewController, argv))
-				) {
+				if (webAppViewController) {
+					const argUrlResult = await loadUrlFromArguments(webAppViewController, argv);
+					if (!argUrlResult.main && !argUrlResult.article) {
+						return;
+					}
 					if (
 						webAppViewController.window.isMinimized()
 					) {
