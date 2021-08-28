@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron';
 import path from 'path';
+import { appConfig } from './appConfig';
 import { ArticleViewController } from './articleViewController';
 import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
@@ -17,6 +18,7 @@ import { UserAccount } from './models/UserAccount';
 import { WebAuthRequest } from './models/WebAuth';
 import { notifications } from './notifications';
 import { readerScript } from './readerScript';
+import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
 
 const defaultWindowBackgroundColor = '#2a2326';
@@ -26,7 +28,7 @@ const defaultWindowSize = {
 };
 const windowTitle = 'Readup';
 const appPlatform = AppPlatform.Windows;
-const appVersion = '1.0.0';
+const appVersion = appConfig.appVersion.toString();
 
 function getDeviceInfo(): DeviceInfo {
 	return {
@@ -40,10 +42,10 @@ function getDeviceInfo(): DeviceInfo {
 
 function prepareUrl(url: URL) {
 	// convert reallyread.it urls to readup.com
-	url.hostname = url.hostname.replace('reallyread.it', 'dev.readup.com');
+	url.hostname = url.hostname.replace('reallyread.it', appConfig.webServer.host);
 	// verify that the host matches the web server host
-	if (url.hostname !== 'dev.readup.com') {
-		url = new URL('https://dev.readup.com/');
+	if (url.hostname !== appConfig.webServer.host) {
+		url = createUrl(appConfig.webServer);
 	}
 	// force https
 	url.protocol = 'https:';

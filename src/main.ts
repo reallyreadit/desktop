@@ -1,21 +1,29 @@
 import { app } from 'electron';
+import { AppConfig, appConfig } from './appConfig';
 import { notifications } from './notifications';
 import { readerScript } from './readerScript';
+import { createUrl } from './routing/HttpEndpoint';
 import { sharedCookieStore } from './sharedCookieStore';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
 
 async function loadUrlFromArguments(webAppViewController: WebAppViewController, argv: string[]) {
+	const webServerUrl = createUrl(appConfig.webServer);
 	let urlArg = argv.find(
-		arg => arg.startsWith('readup://') || arg.startsWith('https://dev.readup.com/')
+		arg => arg.startsWith('readup://') || arg.startsWith(webServerUrl.href)
 	);
 	if (!urlArg) {
 		return false;
 	}
 	if (
-		urlArg.startsWith('readup://dev.readup.com/')
+		urlArg.startsWith(
+			webServerUrl.href.replace(
+				new RegExp(`^${webServerUrl.protocol}`),
+				'readup:'
+			)
+		)
 	) {
-		urlArg = urlArg.replace(/^readup:/, 'https:');
+		urlArg = urlArg.replace(/^readup:/, webServerUrl.protocol);
 	}
 	const url = new URL(urlArg);
 	let pathComponents: string[] | undefined;
@@ -52,8 +60,10 @@ async function loadUrlFromArguments(webAppViewController: WebAppViewController, 
 if (
 	app.requestSingleInstanceLock()
 ) {
-	// DEBUG ONLY
-	app.setAppUserModelId(process.execPath);
+	// Enable development notifications.
+	if (appConfig.type === 'dev') {
+		app.setAppUserModelId(process.execPath);
+	}
 	let webAppViewController: WebAppViewController | undefined;
 	app
 		.whenReady()
@@ -68,7 +78,7 @@ if (
 					!(await loadUrlFromArguments(webAppViewController, process.argv))
 				) {
 					webAppViewController.loadUrl(
-						new URL('https://dev.readup.com/')
+						createUrl(appConfig.webServer)
 					);
 				}
 				// Initialize services.

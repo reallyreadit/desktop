@@ -4,8 +4,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import { app } from 'electron';
 import got from 'got/dist/source';
-
-const bundledScriptVersion = '12.2.1';
+import { appConfig } from './appConfig';
+import { createUrl } from './routing/HttpEndpoint';
 
 export interface ScriptUpdateRecord {
 	downloadedVersion: string | null,
@@ -38,7 +38,7 @@ export const readerScript = {
 			if (
 				updateRecord?.downloadedVersion &&
 				new SemanticVersion(updateRecord.downloadedVersion)
-					.compareTo(new SemanticVersion(bundledScriptVersion)) > 0
+					.compareTo(appConfig.readerScriptVersion) > 0
 			) {
 				console.log('[scripts] loading downloaded script');
 				return await fs.readFile(
@@ -75,29 +75,24 @@ export const readerScript = {
 		if (updateRecord && now - updateRecord.lastUpdateCheck < 1 * 60 * 60 * 1000) {
 			return;
 		}
-		const currentVersion = SemanticVersion.greatest(
-			...[
-				bundledScriptVersion,
-				updateRecord?.downloadedVersion
-			]
-				.reduce<string[]>(
-					(versionStrings, versionString) => {
-						if (versionString) {
-							versionStrings.push(versionString);
-						}
-						return versionStrings;
-					},
-					[]
-				)
-				.map(versionString => new SemanticVersion(versionString))
-		);
+		const availableVersions = [
+			appConfig.readerScriptVersion
+		];
+		if (updateRecord?.downloadedVersion) {
+			availableVersions.push(
+				new SemanticVersion(updateRecord?.downloadedVersion)
+			);
+		}
+		const currentVersion = SemanticVersion.greatest(...availableVersions);
 		console.log(`[scripts] checking for new version. current version: ${currentVersion.toString()}`);
 		userData.setReaderScriptUpdateRecord({
 			downloadedVersion: updateRecord?.downloadedVersion ?? null,
 			lastUpdateCheck: now
 		});
 		got
-			.get('https://static.dev.readup.com/native-client/reader.txt')
+			.get(
+				createUrl(appConfig.staticServer, '/native-client/reader.txt')
+			)
 			.text()
 			.then(text => {
 				const newVersionInfo = text
@@ -113,7 +108,9 @@ export const readerScript = {
 				if (newVersionInfo) {
 					console.log(`[scripts] updating to version: ${newVersionInfo.version.toString()}`);
 					got
-						.get('https://static.dev.readup.com/native-client/reader/' + newVersionInfo.fileName)
+						.get(
+							createUrl(appConfig.staticServer, '/native-client/reader/' + newVersionInfo.fileName)
+						)
 						.text()
 						.then(text => fs.writeFile(
 							getDownloadedScriptPath(),

@@ -1,10 +1,12 @@
 import { session } from 'electron';
 import { Cookie, CookieJar } from 'tough-cookie';
+import { appConfig } from './appConfig';
+import { createUrl } from './routing/HttpEndpoint';
 
 async function getAuthCookie() {
 	const authCookies = await session.defaultSession.cookies.get({
-		domain: '.dev.readup.com',
-		name: 'devSessionKey'
+		domain: appConfig.authCookieDomain,
+		name: appConfig.authCookieName
 	});
 	return authCookies[0];
 }
@@ -25,7 +27,7 @@ export const sharedCookieStore = {
 				httpOnly: true,
 				sameSite: 'none'
 			}),
-			'https://dev.readup.com/'
+			createUrl(appConfig.webServer).href
 		);
 		return cookieJar;
 	},
