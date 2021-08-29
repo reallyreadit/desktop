@@ -1,83 +1,11 @@
 import { app } from 'electron';
-import { AppConfig, appConfig } from './appConfig';
-import { ArticleReference } from './models/ArticleReference';
+import { appConfig } from './appConfig';
 import { notifications } from './notifications';
 import { readerScript } from './readerScript';
+import { loadUrlFromArguments } from './routing/argvParser';
 import { createUrl } from './routing/HttpEndpoint';
-import { sharedCookieStore } from './sharedCookieStore';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
-
-interface ArgumentsUrlResult {
-	main: URL | null,
-	article: ArticleReference | null
-}
-
-async function loadUrlFromArguments(webAppViewController: WebAppViewController, argv: string[]): Promise<ArgumentsUrlResult> {
-	const webServerUrl = createUrl(appConfig.webServer);
-	let urlArg = argv.find(
-		arg => arg.startsWith('readup://') || arg.startsWith(webServerUrl.href)
-	);
-	if (!urlArg) {
-		return {
-			main: null,
-			article: null
-		};
-	}
-	if (
-		urlArg.startsWith(
-			webServerUrl.href.replace(
-				new RegExp(`^${webServerUrl.protocol}`),
-				'readup:'
-			)
-		)
-	) {
-		urlArg = urlArg.replace(/^readup:/, webServerUrl.protocol);
-	}
-	const url = new URL(urlArg);
-	let pathComponents: string[] | undefined;
-	if (
-		url.protocol === 'readup:' &&
-		url.hostname === 'read' &&
-		url.searchParams.has('url') &&
-		await sharedCookieStore.isAuthenticated()
-	) {
-		const articleReference = {
-			url: url.searchParams.get('url')!
-		};
-		await webAppViewController.readArticle(articleReference);
-		return {
-			main: null,
-			article: articleReference
-		};
-	}
-	if (
-		url.pathname.startsWith('/read') &&
-		(pathComponents = url.pathname.split('/')).length === 4 &&
-		await sharedCookieStore.isAuthenticated()
-	) {
-		const
-			slug = pathComponents[2] + '_' + pathComponents[3],
-			commentsUrl = new URL(
-				url.href.replace(/^(https?:\/\/[^\/]+)\/read\/(.+)/, '$1/comments/$2')
-			),
-			articleReference = {
-				slug
-			};
-		await webAppViewController.loadUrl(commentsUrl);
-		await webAppViewController.readArticle(articleReference);
-		return {
-			main: commentsUrl,
-			article: articleReference
-		};
-	}
-	webAppViewController.closeReader();
-	await webAppViewController.loadUrl(url);
-	return {
-		main: url,
-		article: null
-	};
-}
 
 if (
 	app.requestSingleInstanceLock()
@@ -96,11 +24,12 @@ if (
 				await readerScript.initializeDirectories();
 				// Create main view controller.
 				webAppViewController = new WebAppViewController();
-				const argUrlResult = await loadUrlFromArguments(webAppViewController, process.argv);
-				if (!argUrlResult.main) {
-					webAppViewController.loadUrl(
-						createUrl(appConfig.webServer)
-					);
+				const argUrlResult = await loadUrlFromArguments(process.argv);
+				await webAppViewController.loadUrl(
+					argUrlResult.main ?? createUrl(appConfig.webServer)
+				);
+				if (argUrlResult.article) {
+					await webAppViewController.readArticle(argUrlResult.article);
 				}
 				// Initialize services.
 				notifications.startChecking();
@@ -111,9 +40,17 @@ if (
 			'second-instance',
 			async (_, argv) => {
 				if (webAppViewController) {
-					const argUrlResult = await loadUrlFromArguments(webAppViewController, argv);
+					const argUrlResult = await loadUrlFromArguments(argv);
 					if (!argUrlResult.main && !argUrlResult.article) {
 						return;
+					}
+					if (argUrlResult.main) {
+						await webAppViewController.loadUrl(argUrlResult.main);
+					}
+					if (argUrlResult.article) {
+						await webAppViewController.readArticle(argUrlResult.article);
+					} else {
+						webAppViewController.closeReader();
 					}
 					if (
 						webAppViewController.window.isMinimized()
