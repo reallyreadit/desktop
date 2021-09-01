@@ -149,7 +149,8 @@ export class WebAppViewController {
 				app.getAppPath(),
 				'bin/preloadScripts/webAppPreloadScript.js'
 			)
-		}
+		},
+		autoHideMenuBar: true
 	});
 	constructor() {
 		this._window
