@@ -88,7 +88,7 @@ function package() {
 			}
 		],
 		dir: '.',
-		icon: 'content/Readup.ico',
+		icon: 'content/windows/Readup.ico',
 		ignore: [
 			/^\/\./,
 			/^\/src/,
