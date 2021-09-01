@@ -21,8 +21,13 @@ if (
 ) {
 	// Set the Application User Model ID in Windows
 	if (process.platform === 'win32') {
-		// If the app is not installed during development the ID should be changed to process.execPath
-		app.setAppUserModelId('com.squirrel.Readup.Readup');
+		let userModelId: string;
+		if (app.isPackaged) {
+			userModelId = 'com.squirrel.Readup.Readup';
+		} else {
+			userModelId = process.execPath;
+		}
+		app.setAppUserModelId(userModelId);
 	}
 	let webAppViewController: WebAppViewController | undefined;
 	app
