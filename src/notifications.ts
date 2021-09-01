@@ -4,6 +4,7 @@ import { createQueryString } from './routing/queryString';
 import { app, Notification as SystemNotification } from 'electron';
 import timer from 'timers';
 import path from 'path';
+import { sharedCookieStore } from './sharedCookieStore';
 
 interface DisplayedNotification {
 	id: string,
@@ -47,8 +48,13 @@ function clearNotification(id: string) {
 	}
 }
 
-function check() {
+async function check() {
 	console.log('[notifications] checking notifications');
+	if (
+		!(await sharedCookieStore.isAuthenticated())
+	) {
+		return;
+	}
 	apiServer
 		.getJson<NotificationsQueryResult>(
 			'/Extension/Notifications' + createQueryString({
