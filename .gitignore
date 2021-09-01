@@ -1,4 +1,5 @@
 /bin
 /config.*.json
 /node_modules
+/pkg
 /pub

@@ -4,11 +4,31 @@ const fs = require('fs/promises');
 const path = require('path');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
+const winstaller = require('electron-winstaller');
 
-const out = 'pub';
+const
+	buildOut = 'bin',
+	packageOut = 'pub',
+	installerOut = 'pkg';
 
 const argv = yargs(
 		hideBin(process.argv)
+	)
+	.option(
+		'cert',
+		{
+			type: 'string',
+			description: 'The path to the certificate that will be used to sign the setup executable.',
+			requiresArg: true
+		}
+	)
+	.option(
+		'cert-pass',
+		{
+			type: 'string',
+			description: 'The password for the signing certificate.',
+			requiresArg: true
+		}
 	)
 	.option(
 		'config',
@@ -21,14 +41,25 @@ const argv = yargs(
 			requiresArg: true
 		}
 	)
+	.option(
+		'extension-app',
+		{
+			type: 'string',
+			description: 'The path to the browser extension application single file executable to be included in the bundle.',
+			requiresArg: true
+		}
+	)
+	.demandOption('cert')
+	.demandOption('cert-pass')
 	.demandOption('config')
+	.demandOption('extension-app')
 	.help()
 	.argv;
 
-function cleanBuildDir() {
-	console.log('Cleaning build directory...');
+function clean(directory) {
+	console.log(`Cleaning ${directory} directory...`);
 	return fs.rm(
-		'bin',
+		directory,
 		{
 			force: true,
 			recursive: true
@@ -48,18 +79,7 @@ function build() {
 						stdio: 'inherit'
 					}
 				)
-				.on('exit', resolve)
-		}
-	);
-}
-
-function cleanPackageDir() {
-	console.log('Cleaning package directory...');
-	return fs.rm(
-		out,
-		{
-			force: true,
-			recursive: true
+				.on('exit', resolve);
 		}
 	);
 }
@@ -83,8 +103,16 @@ function package() {
 					path.join(buildPath, 'config.json'),
 					JSON.stringify(appConfig)
 				);
+				console.log('Copying browser extension application executable...');
+				await fs.copyFile(
+					argv['extension-app'],
+					path.join(buildPath, 'content/windows/BrowserExtensionApp.exe')
+				);
 				callback();
 			}
+		],
+		arch: [
+			'x64'
 		],
 		dir: '.',
 		icon: 'content/windows/Readup.ico',
@@ -95,11 +123,38 @@ function package() {
 			/^\/config\.[^.]+\.json/,
 			/^\/tsconfig\.json/
 		],
-		out
+		out: packageOut,
+		platform: 'win32'
 	});
 }
 
-cleanBuildDir()
+function createInstaller() {
+	console.log('Starting electron-winstaller...');
+	return winstaller.createWindowsInstaller({
+		appDirectory: path.join(packageOut, 'Readup-win32-x64'),
+		certificateFile: argv['cert'],
+		certificatePassword: argv['cert-pass'],
+		exe: 'Readup.exe',
+		iconUrl: 'https://static.dev.readup.com/app/images/favicon.ico',
+		loadingGif: path.resolve('content/images/electron-installation-tile-500.gif'),
+		name: 'Readup',
+		noMsi: true,
+		outputDirectory: installerOut,
+		setupIcon: path.resolve('content/windows/Readup.ico')
+	});
+}
+
+fs
+	.access(argv['extension-app'])
+	.then(
+		clean(buildOut)
+	)
 	.then(build)
-	.then(cleanPackageDir)
-	.then(package);
+	.then(
+		clean(packageOut)
+	)
+	.then(package)
+	.then(
+		clean(installerOut)
+	)
+	.then(createInstaller);
