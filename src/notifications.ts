@@ -79,7 +79,7 @@ async function check() {
 							body: notification.message,
 							icon: path.resolve(
 								app.getAppPath(),
-								'content/icons/icon-256.png'
+								'content/images/icon-256.png'
 							)
 						});
 						systemNotification.on(
