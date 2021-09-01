@@ -5,11 +5,17 @@ import path from 'path';
 import SemanticVersion from './models/SemanticVersion';
 
 type AppConfigType = 'dev' | 'prod';
+export interface AppConfigExtensionIds {
+	chrome: string,
+	edge: string,
+	firefox: string
+}
 export interface AppConfig {
 	apiServer: HttpEndpoint,
 	appVersion: SemanticVersion,
 	authCookieDomain: string,
 	authCookieName: string,
+	extensionIds: AppConfigExtensionIds,
 	readerScriptVersion: SemanticVersion,
 	staticServer: HttpEndpoint,
 	type: AppConfigType,
