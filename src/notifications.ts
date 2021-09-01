@@ -153,6 +153,6 @@ export const notifications = {
 		clickListeners.push(listener);
 	},
 	startChecking: () => {
-		timer.setInterval(check, 1.5 * 60 * 1000);
+		timer.setInterval(check, 2.5 * 60 * 1000);
 	}
 };
