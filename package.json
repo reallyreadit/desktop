@@ -2,14 +2,18 @@
   "name": "com.readup.desktop",
   "productName": "Readup",
   "version": "1.0.0",
-  "description": "",
+  "description": "Readup",
   "main": "bin/main.js",
   "scripts": {
     "build": "tsc",
     "start": "npm run build && electron .",
     "watch": "tsc --watch"
   },
-  "author": "",
+  "author": {
+		"name": "reallyread.it, inc.",
+		"email": "support@readup.com",
+		"url": "https://readup.com"
+	},
   "license": "ISC",
   "devDependencies": {
     "@types/tough-cookie": "4.0.1",
