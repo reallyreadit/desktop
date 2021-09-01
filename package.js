@@ -13,7 +13,6 @@ const argv = yargs(
 	.option(
 		'config',
 		{
-			alias: 'c',
 			choices: [
 				'dev',
 				'prod'
