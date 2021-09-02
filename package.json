@@ -10,10 +10,10 @@
     "watch": "tsc --watch"
   },
   "author": {
-		"name": "reallyread.it, inc.",
-		"email": "support@readup.com",
-		"url": "https://readup.com"
-	},
+    "name": "reallyread.it, inc.",
+    "email": "support@readup.com",
+    "url": "https://readup.com"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/tough-cookie": "4.0.1",
