@@ -5,6 +5,7 @@ const path = require('path');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
 const winstaller = require('electron-winstaller');
+const webpack = require('webpack');
 
 // Constants.
 const
@@ -94,21 +95,75 @@ function clean(directory) {
 	);
 }
 
-function build() {
-	console.log('Building...');
-	 return new Promise(
-		resolve => {
-			childProcess
-				.spawn(
-					'npm run build',
-					{
-						shell: true,
-						stdio: 'inherit'
+function createWebpackBuild(config) {
+	return new Promise(
+		(resolve, reject) => {
+			webpack(
+				config,
+				(err, stats) => {
+					if (err) {
+						reject(err);
+					} else {
+						console.log(
+							stats.toString({
+								chunks: false,
+								colors: true
+							})
+						);
+						resolve();
 					}
-				)
-				.on('exit', resolve);
+				}
+			);
 		}
 	);
+};
+
+function build() {
+	console.log('Building...');
+	const commonConfig = {
+		module: {
+			rules: [
+				{
+					test: /\.tsx?$/,
+					use: 'ts-loader',
+					exclude: /node_modules/,
+				},
+			],
+		},
+		resolve: {
+			extensions: ['.tsx', '.ts', '.js'],
+		},
+		mode: 'production'
+	};
+	return Promise.all([
+		createWebpackBuild({
+			...commonConfig,
+			entry: './src/main.ts',
+			output: {
+				filename: 'main.js',
+				path: path.resolve(__dirname, 'bin')
+			},
+			target: 'electron-main'
+		}),
+		createWebpackBuild({
+			...commonConfig,
+			entry: './src/preloadScripts/articlePreloadScript.ts',
+			output: {
+				filename: 'articlePreloadScript.js',
+				path: path.resolve(__dirname, 'bin/preloadScripts')
+			},
+			target: 'electron-preload'
+		}),
+		createWebpackBuild({
+			...commonConfig,
+			entry: './src/preloadScripts/webAppPreloadScript.ts',
+			output: {
+				filename: 'webAppPreloadScript.js',
+				path: path.resolve(__dirname, 'bin/preloadScripts')
+			},
+			target: 'electron-preload'
+		})
+	]);
 }
 
 function package() {
