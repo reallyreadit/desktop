@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, autoUpdater, BrowserWindow, shell } from 'electron';
 import path from 'path';
 import { appConfig } from './appConfig';
 import { ArticleViewController } from './articleViewController';
@@ -97,6 +97,9 @@ export class WebAppViewController {
 						getDeviceInfo()
 					);
 					break;
+				case 'installUpdate':
+					autoUpdater.quitAndInstall();
+					break;
 				case 'openExternalUrl':
 				case 'openExternalUrlUsingSystem':
 					shell.openExternal(message.data as string);
@@ -185,6 +188,17 @@ export class WebAppViewController {
 			async event => {
 				this.closeReader();
 				await this.loadUrl(event.url);
+			}
+		);
+		autoUpdater.on(
+			'update-downloaded',
+			(event, releaseNotes, releaseName, releaseDate, updateURL) => {
+				this._messagingContext.sendMessage({
+					type: 'updateAvailable',
+					data: {
+						releaseName
+					}
+				});
 			}
 		);
 	}

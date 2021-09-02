@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, autoUpdater } from 'electron';
 import { appConfig } from './appConfig';
 import { SquirrelResult, tryProcessSquirrelEvent } from './installation/squirrel';
 import { notifications } from './notifications';
@@ -7,6 +7,7 @@ import { loadUrlFromArguments } from './routing/argvParser';
 import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
+import timer from 'timers';
 
 /**
  * Process any Squirrel events before anything else. If we are handling a Squirrel
@@ -48,6 +49,17 @@ if (
 				}
 				// Initialize services.
 				notifications.startChecking();
+				if (app.isPackaged) {
+					autoUpdater.setFeedURL({
+						url: appConfig.autoUpdateFeedUrl
+					});
+					timer.setInterval(
+						() => {
+							autoUpdater.checkForUpdates();
+						},
+						1 * 60 * 60 * 1000
+					)
+				}
 			}
 		);
 	app

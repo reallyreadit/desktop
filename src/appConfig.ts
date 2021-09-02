@@ -15,6 +15,7 @@ export interface AppConfig {
 	appVersion: SemanticVersion,
 	authCookieDomain: string,
 	authCookieName: string,
+	autoUpdateFeedUrl: string,
 	extensionIds: AppConfigExtensionIds,
 	readerScriptVersion: SemanticVersion,
 	staticServer: HttpEndpoint,

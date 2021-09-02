@@ -1,16 +1,18 @@
 const packager = require('electron-packager');
-const childProcess = require('child_process');
-const fs = require('fs/promises');
+const fs = require('fs');
+const fsPromise = require('fs/promises');
 const path = require('path');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
 const winstaller = require('electron-winstaller');
 
+// Constants.
 const
 	buildOut = 'bin',
 	packageOut = 'pub',
 	installerOut = 'pkg';
 
+// Command line arguments.
 const argv = yargs(
 		hideBin(process.argv)
 	)
@@ -56,9 +58,34 @@ const argv = yargs(
 	.help()
 	.argv;
 
+try {
+	fs.accessSync(argv['extension-app']);
+} catch {
+	console.error(`Error accessing extension application: ${argv['extension-app']}`);
+	return;
+}
+
+// Configuration.
+let appConfig;
+try {
+	const configFilePath = `config.${argv.config}.json`;
+	appConfig = JSON.parse(
+		fs.readFileSync(
+			configFilePath,
+			{
+				encoding: 'utf8'
+			}
+		)
+	);
+	appConfig.type = argv.config;
+} catch {
+	console.error(`Error reading config file: ${configFilePath}`);
+	return;
+}
+
 function clean(directory) {
 	console.log(`Cleaning ${directory} directory...`);
-	return fs.rm(
+	return fsPromise.rm(
 		directory,
 		{
 			force: true,
@@ -88,23 +115,14 @@ function package() {
 	console.log('Starting electron-packager...');
 	return packager({
 		afterCopy: [
-			async (buildPath, electronVersion, platform, arch, callback) => {
+			(buildPath, electronVersion, platform, arch, callback) => {
 				console.log('Writing configuration file...');
-				const appConfig = JSON.parse(
-					await fs.readFile(
-						`config.${argv.config}.json`,
-						{
-							encoding: 'utf8'
-						}
-					)
-				);
-				appConfig['type'] = argv.config;
-				await fs.writeFile(
+				fs.writeFileSync(
 					path.join(buildPath, 'config.json'),
 					JSON.stringify(appConfig)
 				);
 				console.log('Copying browser extension application executable...');
-				await fs.copyFile(
+				fs.copyFileSync(
 					argv['extension-app'],
 					path.join(buildPath, 'content/windows/BrowserExtensionApp.exe')
 				);
@@ -140,15 +158,12 @@ function createInstaller() {
 		name: 'Readup',
 		noMsi: true,
 		outputDirectory: installerOut,
+		remoteReleases: appConfig.autoUpdateFeedUrl,
 		setupIcon: path.resolve('content/windows/Readup.ico')
 	});
 }
 
-fs
-	.access(argv['extension-app'])
-	.then(
-		clean(buildOut)
-	)
+clean(buildOut)
 	.then(build)
 	.then(
 		clean(packageOut)
