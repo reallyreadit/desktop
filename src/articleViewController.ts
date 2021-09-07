@@ -43,6 +43,8 @@ export interface ArticleViewControllerParams {
 }
 
 export class ArticleViewController {
+	private _commitErrorCount = 0;
+	private _hasParsedPage = false;
 	private readonly _messagingContext = new MessagingContext({
 		executeJavaScript: code => {
 			this._view.webContents.executeJavaScript(code);
@@ -57,7 +59,12 @@ export class ArticleViewController {
 					this._params.onDisplayPreferenceChanged(preference);
 					apiServer
 						.postJson<DisplayPreference, DisplayPreference>('/UserAccounts/DisplayPreference', preference)
-						.then(sendResponse);
+						.then(sendResponse)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error saving display preference.');
+							}
+						);
 					break;
 				case 'commitReadState':
 					const event = message.data as CommitReadStateEvent;
@@ -65,6 +72,7 @@ export class ArticleViewController {
 						.postJson<ReadStateCommitData, Article>('/Extension/CommitReadState', event.commitData)
 						.then(
 							article => {
+								this._commitErrorCount = 0;
 								this._params.onArticleUpdated({
 									article,
 									isCompletionCommit: event.isCompletionCommit
@@ -83,6 +91,12 @@ export class ArticleViewController {
 									sendResponse(
 										createWebViewFailureResult(reason)
 									)
+								} else {
+									if (this._commitErrorCount > 5) {
+										this.setOverlayErrorState('Error saving reading progress.');
+									} else {
+										this._commitErrorCount++;
+									}
 								}
 							}
 						);
@@ -95,6 +109,11 @@ export class ArticleViewController {
 								this._params.onCommentUpdated(comment);
 								sendResponse(comment);
 							}
+						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error deleting comment.');
+							}
 						);
 					break;
 				case 'getComments':
@@ -105,7 +124,12 @@ export class ArticleViewController {
 								slug: message.data as string
 							}
 						)
-						.then(sendResponse);
+						.then(sendResponse)
+						.catch(
+							() => {
+								console.log('[article] error fetching comments');
+							}
+						);
 					break;
 				case 'getDisplayPreference':
 					const storedPreference = await userData.getDisplayPreference();
@@ -130,6 +154,11 @@ export class ArticleViewController {
 								});
 								this._params.onDisplayPreferenceChanged(preference);
 							}
+						)
+						.catch(
+							() => {
+								console.log('[article] error fetching display preference');
+							}
 						);
 					break;
 				case 'navBack':
@@ -149,6 +178,11 @@ export class ArticleViewController {
 								sendResponse(association);
 							}
 						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error linking Twitter account.');
+							}
+						);
 					break;
 				case 'openExternalUrl':
 				case 'openExternalUrlUsingSystem':
@@ -162,9 +196,15 @@ export class ArticleViewController {
 					this._params.onOpenSubscriptionPrompt();
 					break;
 				case 'parseResult':
+					this._hasParsedPage = true;
 					apiServer
 						.postJson<PageParseResult, ArticleLookupResult>('/Extension/GetUserArticle', message.data)
-						.then(sendResponse);
+						.then(sendResponse)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error loading reading progress.');
+							}
+						);
 					console.log('[article] did-finish-load');
 					this.setOverlayState({
 						type: OverlayStateType.None
@@ -187,6 +227,11 @@ export class ArticleViewController {
 								}
 								sendResponse(post);
 							}
+						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error posting article.');
+							}
 						);
 					break;
 				case 'postComment':
@@ -201,6 +246,11 @@ export class ArticleViewController {
 								this._params.onCommentPosted(response.comment);
 								sendResponse(response);
 							}
+						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error posting comment.');
+							}
 						);
 					break;
 				case 'postCommentAddendum':
@@ -212,6 +262,11 @@ export class ArticleViewController {
 								sendResponse(comment);
 							}
 						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error posting comment addendum.');
+							}
+						);
 					break;
 				case 'postCommentRevision':
 					apiServer
@@ -222,6 +277,11 @@ export class ArticleViewController {
 								sendResponse(comment);
 							}
 						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error posting comment revision.');
+							}
+						);
 					break;
 				case 'readArticle':
 					await this.loadArticle({
@@ -234,7 +294,12 @@ export class ArticleViewController {
 				case 'requestTwitterWebViewRequestToken':
 					apiServer
 						.postJson<undefined, TwitterRequestToken>('/Auth/TwitterWebViewRequest')
-						.then(sendResponse);
+						.then(sendResponse)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error requesting Twitter token.');
+							}
+						);
 					break;
 				case 'requestWebAuthentication':
 					const request = message.data as WebAuthRequest;
@@ -254,6 +319,11 @@ export class ArticleViewController {
 									article
 								});
 								sendResponse(article);
+							}
+						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error starring article.');
 							}
 						);
 					break;
@@ -291,6 +361,18 @@ export class ArticleViewController {
 				}
 			);
 	}
+	private setOverlayErrorState(message: string) {
+		this.setOverlayState({
+			type: OverlayStateType.Error,
+			id: 'article',
+			message: [
+				message,
+				'Check your internet connection and try again.',
+				'Please contact support@readup.com if this problem persists.'
+			],
+			buttonText: 'Go Back'
+		});
+	}
 	private setOverlayState(state: OverlayState) {
 		this._overlayState = state;
 		this._params.onOverlayStateChanged();
@@ -300,24 +382,41 @@ export class ArticleViewController {
 	}
 	public async loadArticle(reference: ArticleReference) {
 		console.log('[article] did-start-loading');
+		// Reset the local article state.
+		this._commitErrorCount = 0;
+		this._hasParsedPage = false;
+		// Show the loading screen.
 		this.setOverlayState({
 			type: OverlayStateType.Loading
 		});
+		// Resolve the url of the article.
 		let url: URL;
 		if (
 			isArticleUrlReference(reference)
 		) {
 			url = new URL(reference.url);
 		} else {
-			const article = await apiServer.getJson<Article>(
-				'/Articles/Details',
-				{
-					slug: reference.slug
-				}
-			);
-			url = new URL(article.url);
+			try {
+				const article = await apiServer.getJson<Article>(
+					'/Articles/Details',
+					{
+						slug: reference.slug
+					}
+				);
+				url = new URL(article.url);
+			} catch {
+				this.setOverlayErrorState('Error looking up article.');
+				return;
+			}
 		}
-		const html = await fetchArticle(url);
+		// Load the article HTML.
+		let html: string;
+		try {
+			html = await fetchArticle(url);
+		} catch {
+			this.setOverlayErrorState('Error loading article.');
+			return;
+		}
 		const articleUrlHash = crypto
 			.createHash('md5')
 			.update(url.href)
@@ -335,10 +434,19 @@ export class ArticleViewController {
 				}
 			}
 		);
+		await fs.unlink(tempFilePath);
+		// Load the reader script and set a timeout for parser errors.
 		await this._view.webContents.executeJavaScript(
 			await readerScript.getLatestScript()
 		);
-		await fs.unlink(tempFilePath);
+		setTimeout(
+			() => {
+				if (!this._hasParsedPage) {
+					this.setOverlayErrorState('Error parsing article.');
+				}
+			},
+			30 * 1000
+		);
 	}
 	public get overlayState() {
 		return this._overlayState;

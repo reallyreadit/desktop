@@ -330,6 +330,7 @@ export class WebAppViewController {
 					this.detachView(this._articleViewController.view);
 					this._articleViewController.dispose();
 					this._articleViewController = undefined;
+					this.setOverlayVisibility();
 				}
 				return Promise.resolve();
 			}
