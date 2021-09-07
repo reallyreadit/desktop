@@ -101,7 +101,7 @@ export class WebAppViewController {
 	};
 	private readonly _messagingContext = new MessagingContext({
 		executeJavaScript: code => {
-			this._window.webContents.executeJavaScript(code);
+			this._view.webContents.executeJavaScript(code);
 		},
 		ipcChannel: 'web-app',
 		javascriptListenerObject: 'window.reallyreadit.app',
