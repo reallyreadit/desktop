@@ -27,6 +27,8 @@ import { WebAuthRequest } from './models/WebAuth';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 import { readerScript } from './readerScript';
 import { OverlayState, OverlayStateType } from './overlayViewController';
+import { getAppPlatform } from './models/AppPlatform';
+import { appConfig } from './appConfig';
 
 export interface ArticleViewControllerParams {
 	onArticlePosted: (post: Post) => void,
@@ -453,6 +455,21 @@ export class ArticleViewController {
 			}
 		);
 		await fs.unlink(tempFilePath);
+		// Load the init data.
+		const initData = {
+			nativeClient: {
+				reader: {
+					initData: {
+						appPlatform: getAppPlatform(),
+						appVersion: appConfig.appVersion.toString(),
+						displayPreference: await userData.getDisplayPreference()
+					}
+				}
+			}
+		};
+		await this._view.webContents.executeJavaScript(
+			`window.reallyreadit = ${JSON.stringify(initData)};`
+		);
 		// Load the reader script and set a timeout for parser errors.
 		await this._view.webContents.executeJavaScript(
 			await readerScript.getLatestScript()
