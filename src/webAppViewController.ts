@@ -1,10 +1,11 @@
-import { app, autoUpdater, BrowserWindow, shell } from 'electron';
+import { app, autoUpdater, BrowserView, BrowserWindow, shell } from 'electron';
 import path from 'path';
 import { appConfig } from './appConfig';
 import { ArticleViewController } from './articleViewController';
 import { presentAppleIdAuthSession } from './authentication/appleIdAuthSession';
 import { presentOauthAuthSession } from './authentication/oauthAuthSession';
 import { presentExternalUrlSession } from './externalUrlSession';
+import { OverlayState, OverlayStateType, OverlayViewController } from './overlayViewController';
 import { MessagingContext } from './messagingContext';
 import { AlertStatus } from './models/AlertStatus';
 import { AppActivationEvent } from './models/AppActivationEvent';
@@ -20,8 +21,12 @@ import { notifications } from './notifications';
 import { readerScript } from './readerScript';
 import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
+import { DisplayTheme } from './models/DisplayPreference';
 
-const defaultWindowBackgroundColor = '#2a2326';
+const windowBackgroundColorMap: { [key in DisplayTheme]: string } = {
+	[DisplayTheme.Dark]: '#2a2326',
+	[DisplayTheme.Light]: '#f7f6f5'
+};
 const defaultWindowSize = {
 	width: 800,
 	height: 600
@@ -65,9 +70,35 @@ function signOut() {
 	console.log('[webapp] unauthenticated');
 }
 
+interface WebAppViewControllerParams {
+	displayTheme: DisplayTheme
+}
+
 export class WebAppViewController {
 	private _articleViewController: ArticleViewController | undefined;
+	private _displayTheme: DisplayTheme;
 	private _hasEstablishedCommunication = false;
+	private readonly _overlayViewController = new OverlayViewController({
+		ipcChannel: 'overlay',
+		onErrorButtonClicked: async id => {
+			switch (id) {
+				case 'article':
+					this.closeReader();
+					break;
+				case 'webApp':
+					await this.loadUrl(
+						createUrl(appConfig.webServer)
+					);
+					break;
+			}
+		},
+		onTransitionComplete: () => {
+			this.setOverlayVisibility();
+		}
+	});
+	private _overlayState: OverlayState = {
+		type: OverlayStateType.Loading
+	};
 	private readonly _messagingContext = new MessagingContext({
 		executeJavaScript: code => {
 			this._window.webContents.executeJavaScript(code);
@@ -77,7 +108,8 @@ export class WebAppViewController {
 		onMessage: async (message, sendResponse) => {
 			switch (message.type) {
 				case 'displayPreferenceChanged':
-					userData.setDisplayPreference(message.data);
+					this.setDisplayTheme(message.data.theme);
+					await userData.setDisplayPreference(message.data);
 					break;
 				case 'getDeviceInfo':
 					this._hasEstablishedCommunication = true;
@@ -142,20 +174,27 @@ export class WebAppViewController {
 			}
 		}
 	});
-	private readonly _window = new BrowserWindow({
-		width: defaultWindowSize.width,
-		height: defaultWindowSize.height,
-		title: windowTitle,
-		backgroundColor: defaultWindowBackgroundColor,
+	private readonly _view = new BrowserView({
 		webPreferences: {
 			preload: path.resolve(
 				app.getAppPath(),
 				'bin/preloadScripts/webAppPreloadScript.js'
 			)
-		},
-		autoHideMenuBar: true
+		}
 	});
-	constructor() {
+	private readonly _window: BrowserWindow;
+	constructor(params: WebAppViewControllerParams) {
+		this._displayTheme = params.displayTheme;
+		this._window = new BrowserWindow({
+			width: defaultWindowSize.width,
+			height: defaultWindowSize.height,
+			title: windowTitle,
+			backgroundColor: windowBackgroundColorMap[params.displayTheme],
+			autoHideMenuBar: true
+		});
+		this.attachView(this._view);
+		this.attachView(this._overlayViewController.view);
+		this.setTopBrowserView(this._view);
 		this._window
 			.on(
 				'focus',
@@ -174,6 +213,36 @@ export class WebAppViewController {
 				'page-title-updated',
 				event => {
 					event.preventDefault();
+				}
+			);
+		this._view.webContents
+			.on(
+				'did-start-loading',
+				() => {
+					console.log('[web-app] did-start-loading');
+					this.setOverlayState({
+						type: OverlayStateType.Loading
+					});
+				}
+			)
+			.on(
+				'did-navigate',
+				(event, url, httpResponseCode, httpStatusText) => {
+					console.log('[web-app] did-navigate');
+					if (httpResponseCode === 200) {
+						this.setOverlayState({
+							type: OverlayStateType.None
+						});
+					} else {
+						this.setOverlayErrorState();
+					}
+				}
+			)
+			.on(
+				'did-fail-load',
+				() => {
+					console.log('[web-app] did-fail-load');
+					this.setOverlayErrorState();
 				}
 			);
 		notifications.addAlertStatusListener(
@@ -202,29 +271,93 @@ export class WebAppViewController {
 			}
 		);
 	}
+	private attachView(view: BrowserView) {
+		const windowBounds = this._window.getContentBounds();
+		this._window.addBrowserView(view);
+		view.setBounds({
+			x: 0,
+			y: 0,
+			width: windowBounds.width,
+			height: windowBounds.height
+		});
+		view.setAutoResize({
+			height: true,
+			width: true
+		});
+	}
+	private detachView(view: BrowserView) {
+		this._window.removeBrowserView(view);
+	}
+	private setDisplayTheme(displayTheme: DisplayTheme) {
+		this._displayTheme = displayTheme;
+		this._overlayViewController.setDisplayTheme(displayTheme);
+	}
+	private setOverlayErrorState() {
+		this.setOverlayState({
+			type: OverlayStateType.Error,
+			id: 'webApp',
+			message: [
+				'An error occured while loading the app.',
+				'You must be online to use Readup.',
+				'Offline support coming soon!'
+			],
+			buttonText: 'Try Again'
+		});
+	}
+	private setOverlayState(state: OverlayState) {
+		this._overlayState = state;
+		this.setOverlayVisibility();
+	}
+	private setOverlayVisibility() {
+		let topViewControllerState = this._articleViewController?.overlayState ?? this._overlayState;
+		this._overlayViewController.setState(topViewControllerState);
+		if (topViewControllerState.type !== OverlayStateType.None || this._overlayViewController.isTransitioning) {
+			this.setTopBrowserView(this._overlayViewController.view);
+		} else {
+			this.setTopBrowserView(this._articleViewController?.view ?? this._view);
+		}
+	}
+	private setTopBrowserView(view: BrowserView) {
+		this._window.setTopBrowserView(view);
+	}
 	public closeReader() {
-		this._articleViewController?.detach(this._window);
-		this._articleViewController = undefined;
+		if (!this._articleViewController) {
+			return;
+		}
+		this._overlayViewController.beginTransition(
+			() => {
+				if (this._articleViewController) {
+					this.detachView(this._articleViewController.view);
+					this._articleViewController.dispose();
+					this._articleViewController = undefined;
+				}
+				return Promise.resolve();
+			}
+		);
+		this.setOverlayVisibility();
 	}
 	public async loadUrl(url: URL) {
 		const preparedUrl = prepareUrl(url)
 			.toString();
 		console.log(`[webapp] load url: ${preparedUrl}`);
+		if (!this._overlayViewController.hasInitialized) {
+			await this._overlayViewController.initialize(this._overlayState, this._displayTheme);
+		}
 		if (this._hasEstablishedCommunication) {
 			this._messagingContext.sendMessage({
 				type: 'loadUrl',
 				data: preparedUrl
 			});
 		} else {
-			await this._window.loadURL(preparedUrl);
+			await this._view.webContents.loadURL(preparedUrl);
 		}
 	}
 	public async readArticle(articleReference: ArticleReference) {
 		if (this._articleViewController) {
-			await this._articleViewController.replaceArticle(articleReference);
+			await this._articleViewController.loadArticle(articleReference);
 			return;
 		}
-		this._articleViewController = new ArticleViewController({
+		const articleViewController = new ArticleViewController({
 			onArticlePosted: post => {
 				this._messagingContext.sendMessage({
 					type: 'articlePosted',
@@ -265,6 +398,7 @@ export class WebAppViewController {
 				});
 			},
 			onDisplayPreferenceChanged: preference => {
+				this.setDisplayTheme(preference.theme);
 				this._messagingContext.sendMessage({
 					type: 'displayPreferenceChanged',
 					data: preference
@@ -280,10 +414,20 @@ export class WebAppViewController {
 					type: 'openSubscriptionPrompt',
 					data: true
 				});
+			},
+			onOverlayStateChanged: () => {
+				this.setOverlayVisibility();
 			}
 		});
-		await this._articleViewController.attach(this._window);
-		await this._articleViewController.replaceArticle(articleReference);
+		this._overlayViewController.beginTransition(
+			async () => {
+				this._articleViewController = articleViewController;
+				this.attachView(this._articleViewController.view);
+				this.setOverlayVisibility();
+				await this._articleViewController.loadArticle(articleReference);
+			}
+		);
+		this.setOverlayVisibility();
 	}
 	public get window() {
 		return this._window;

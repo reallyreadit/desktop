@@ -8,6 +8,7 @@ import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
 import timer from 'timers';
+import { DisplayTheme } from './models/DisplayPreference';
 
 /**
  * Process any Squirrel events before anything else. If we are handling a Squirrel
@@ -39,7 +40,10 @@ if (
 				await userData.initializeDirectories();
 				await readerScript.initializeDirectories();
 				// Create main view controller.
-				webAppViewController = new WebAppViewController();
+				const displayPreference = await userData.getDisplayPreference();
+				webAppViewController = new WebAppViewController({
+					displayTheme: displayPreference?.theme ?? DisplayTheme.Light
+				});
 				const argUrlResult = await loadUrlFromArguments(process.argv);
 				await webAppViewController.loadUrl(
 					argUrlResult.main ?? createUrl(appConfig.webServer)
