@@ -327,6 +327,24 @@ export class ArticleViewController {
 							}
 						);
 					break;
+				case 'unstarArticle':
+					apiServer
+						.postJson<StarArticleRequest, Article>('/Articles/Unstar', message.data as StarArticleRequest)
+						.then(
+							article => {
+								this._params.onArticleUpdated({
+									article,
+									isCompletionCommit: false
+								});
+								sendResponse(article);
+							}
+						)
+						.catch(
+							() => {
+								this.setOverlayErrorState('Error unstarring article.');
+							}
+						);
+					break;
 			}
 		}
 	});
