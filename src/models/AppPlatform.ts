@@ -5,3 +5,7 @@ export enum AppPlatform {
 	MacOs = 'macOS',
 	Windows = 'Windows'
 }
+
+export function getAppPlatform() {
+	return AppPlatform.Windows;
+}

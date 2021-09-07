@@ -9,7 +9,7 @@ import { OverlayState, OverlayStateType, OverlayViewController } from './overlay
 import { MessagingContext } from './messagingContext';
 import { AlertStatus } from './models/AlertStatus';
 import { AppActivationEvent } from './models/AppActivationEvent';
-import { AppPlatform } from './models/AppPlatform';
+import { AppPlatform, getAppPlatform } from './models/AppPlatform';
 import { ArticleReference } from './models/ArticleReference';
 import { DeviceInfo } from './models/DeviceInfo';
 import { InitializationEvent } from './models/InitializationEvent';
@@ -32,7 +32,7 @@ const defaultWindowSize = {
 	height: 600
 };
 const windowTitle = 'Readup';
-const appPlatform = AppPlatform.Windows;
+const appPlatform = getAppPlatform();
 const appVersion = appConfig.appVersion.toString();
 
 function getDeviceInfo(): DeviceInfo {
