@@ -22,6 +22,7 @@ import { readerScript } from './readerScript';
 import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
 import { DisplayTheme } from './models/DisplayPreference';
+import { ArticleReadOptions } from './models/ArticleReadOptions';
 
 const windowBackgroundColorMap: { [key in DisplayTheme]: string } = {
 	[DisplayTheme.Dark]: '#2a2326',
@@ -353,9 +354,9 @@ export class WebAppViewController {
 			await this._view.webContents.loadURL(preparedUrl);
 		}
 	}
-	public async readArticle(articleReference: ArticleReference) {
+	public async readArticle(articleReference: ArticleReference, options?: ArticleReadOptions) {
 		if (this._articleViewController) {
-			await this._articleViewController.loadArticle(articleReference);
+			await this._articleViewController.loadArticle(articleReference, options);
 			return;
 		}
 		const articleViewController = new ArticleViewController({
@@ -425,7 +426,7 @@ export class WebAppViewController {
 				this._articleViewController = articleViewController;
 				this.attachView(this._articleViewController.view);
 				this.setOverlayVisibility();
-				await this._articleViewController.loadArticle(articleReference);
+				await this._articleViewController.loadArticle(articleReference, options);
 			}
 		);
 		this.setOverlayVisibility();

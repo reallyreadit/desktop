@@ -49,7 +49,7 @@ if (
 					argUrlResult.main ?? createUrl(appConfig.webServer)
 				);
 				if (argUrlResult.article) {
-					await webAppViewController.readArticle(argUrlResult.article);
+					await webAppViewController.readArticle(argUrlResult.article.reference, argUrlResult.article.options);
 				}
 				// Initialize services.
 				notifications.startChecking();
@@ -79,7 +79,7 @@ if (
 						await webAppViewController.loadUrl(argUrlResult.main);
 					}
 					if (argUrlResult.article) {
-						await webAppViewController.readArticle(argUrlResult.article);
+						await webAppViewController.readArticle(argUrlResult.article.reference, argUrlResult.article.options);
 					} else {
 						webAppViewController.closeReader();
 					}

@@ -29,6 +29,7 @@ import { readerScript } from './readerScript';
 import { OverlayState, OverlayStateType } from './overlayViewController';
 import { getAppPlatform } from './models/AppPlatform';
 import { appConfig } from './appConfig';
+import { ArticleReadOptions } from './models/ArticleReadOptions';
 
 export interface ArticleViewControllerParams {
 	onArticlePosted: (post: Post) => void,
@@ -199,9 +200,20 @@ export class ArticleViewController {
 					break;
 				case 'parseResult':
 					this._hasParsedPage = true;
+					const parseResult = message.data as PageParseResult;
+					parseResult.star = this._readOptions?.star;
 					apiServer
-						.postJson<PageParseResult, ArticleLookupResult>('/Extension/GetUserArticle', message.data)
-						.then(sendResponse)
+						.postJson<PageParseResult, ArticleLookupResult>('/Extension/GetUserArticle', parseResult)
+						.then(
+							response => {
+								if (parseResult.star) {
+									this._params.onArticleStarred({
+										article: response.userArticle
+									});
+								}
+								sendResponse(response);
+							}
+						)
 						.catch(
 							() => {
 								this.setOverlayErrorState('Error loading reading progress.');
@@ -354,6 +366,7 @@ export class ArticleViewController {
 		type: OverlayStateType.Loading
 	};
 	private readonly _params: ArticleViewControllerParams;
+	private _readOptions: ArticleReadOptions | undefined;
 	private readonly _view = new BrowserView({
 		webPreferences: {
 			preload: path.resolve(
@@ -400,11 +413,12 @@ export class ArticleViewController {
 	public dispose() {
 		this._messagingContext.dispose();
 	}
-	public async loadArticle(reference: ArticleReference) {
+	public async loadArticle(reference: ArticleReference, options?: ArticleReadOptions) {
 		console.log('[article] did-start-loading');
 		// Reset the local article state.
 		this._commitErrorCount = 0;
 		this._hasParsedPage = false;
+		this._readOptions = options;
 		// Show the loading screen.
 		this.setOverlayState({
 			type: OverlayStateType.Loading

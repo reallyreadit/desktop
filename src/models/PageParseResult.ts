@@ -23,5 +23,6 @@ export interface PageParseResult {
 			url: string
 		}[],
 		imageUrl?: string
-	}
+	},
+	star?: boolean
 }

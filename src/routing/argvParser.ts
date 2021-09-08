@@ -1,11 +1,15 @@
 import { appConfig } from '../appConfig';
+import { ArticleReadOptions } from '../models/ArticleReadOptions';
 import { ArticleReference } from '../models/ArticleReference';
 import { sharedCookieStore } from '../sharedCookieStore';
 import { createUrl } from './HttpEndpoint';
 
 export interface ArgumentsUrlResult {
 	main: URL | null,
-	article: ArticleReference | null
+	article: {
+		reference: ArticleReference,
+		options?: ArticleReadOptions
+	} | null
 }
 
 export async function loadUrlFromArguments(argv: string[]): Promise<ArgumentsUrlResult> {
@@ -40,7 +44,12 @@ export async function loadUrlFromArguments(argv: string[]): Promise<ArgumentsUrl
 		return {
 			main: null,
 			article: {
-				url: url.searchParams.get('url')!
+				reference: {
+					url: url.searchParams.get('url')!
+				},
+				options: {
+					star: url.searchParams.has('star')
+				}
 			}
 		};
 	}
@@ -54,7 +63,9 @@ export async function loadUrlFromArguments(argv: string[]): Promise<ArgumentsUrl
 				url.href.replace(/^(https?:\/\/[^\/]+)\/read\/(.+)/, '$1/comments/$2')
 			),
 			article: {
-				slug: pathComponents[2] + '_' + pathComponents[3]
+				reference: {
+					slug: pathComponents[2] + '_' + pathComponents[3]
+				}
 			}
 		};
 	}
