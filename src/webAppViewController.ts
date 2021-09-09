@@ -218,9 +218,12 @@ export class WebAppViewController {
 			);
 		this._view.webContents
 			.on(
-				'did-start-loading',
-				() => {
-					console.log('[web-app] did-start-loading');
+				'did-start-navigation',
+				(event, url, isInPlace, isMainFrame, frameProcessId, frameRoutingId) => {
+					if (isInPlace || !isMainFrame) {
+						return;
+					}
+					console.log('[web-app] did-start-navigation');
 					this.setOverlayState({
 						type: OverlayStateType.Loading
 					});
