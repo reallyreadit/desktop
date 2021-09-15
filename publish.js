@@ -1,14 +1,32 @@
 const fs = require('fs');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
-const { buildOut, packageOut } = require('./build/constants');
+const { buildOut, installerOut, packageOut } = require('./build/constants');
 const { clean } = require('./build/clean');
 const { build } = require('./build/typescript');
+const { createInstaller: createWindowsInstaller } = require('./build/windows');
+const { createInstaller: createLinuxInstaller } = require('./build/linux');
 const { package } = require('./build/package');
 
 // Command line arguments.
 const argv = yargs(
 		hideBin(process.argv)
+	)
+	.option(
+		'cert',
+		{
+			type: 'string',
+			description: 'The path to the certificate that will be used to sign the setup executable (--platform win32 only).',
+			requiresArg: true
+		}
+	)
+	.option(
+		'cert-pass',
+		{
+			type: 'string',
+			description: 'The password for the signing certificate  (--platform win32 only).',
+			requiresArg: true
+		}
 	)
 	.option(
 		'config',
@@ -46,6 +64,14 @@ const argv = yargs(
 	.help()
 	.argv;
 
+if (
+	argv.platform === 'win32' &&
+	!(argv.cert && argv['cert-pass'])
+) {
+	console.error('Code signing arguments --cert and --cert-pass are required when --platform is win32');
+	return;
+}
+
 try {
 	fs.accessSync(argv['extension-app']);
 } catch {
@@ -64,4 +90,22 @@ clean(buildOut)
 			extensionAppPath: argv['extension-app'],
 			platform: argv.platform
 		})
+	)
+	.then(
+		() => clean(installerOut)
+	)
+	.then(
+		() => {
+			switch (argv.platform) {
+				case 'linux':
+					return createLinuxInstaller();
+				case 'win32':
+					return createWindowsInstaller({
+						certFile: argv.cert,
+						certPassword: argv['cert-pass'],
+						configType: argv.config
+					});
+			}
+			throw new Error('Unexpected value for --platform argument.');
+		}
 	);
