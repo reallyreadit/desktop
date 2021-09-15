@@ -7,5 +7,11 @@ export enum AppPlatform {
 }
 
 export function getAppPlatform() {
-	return AppPlatform.Windows;
+	switch (process.platform) {
+		case 'linux':
+			return AppPlatform.Linux;
+		case 'win32':
+			return AppPlatform.Windows;
+	}
+	throw new Error('Unexpected value for process.platform: ' + process.platform);
 }
