@@ -14,3 +14,6 @@ export function areEqual(a: DisplayPreference, b: DisplayPreference) {
 		a.theme === b.theme
 	);
 }
+export function getDisplayTheme(preference: DisplayPreference | null) {
+	return preference?.theme ?? DisplayTheme.Light;
+}
