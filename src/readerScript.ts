@@ -97,7 +97,9 @@ export const readerScript = {
 			.then(text => {
 				const newVersionInfo = text
 					.split('\n')
-					.filter(line => !!line)
+					.filter(
+						line => SemanticVersion.regex.test(line)
+					)
 					.map(
 						fileName => ({
 							fileName,
