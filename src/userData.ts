@@ -4,35 +4,72 @@ import path from 'path';
 import { DisplayPreference } from './models/DisplayPreference';
 import { ScriptUpdateRecord } from './readerScript';
 
-const fileNames = {
-	displayPreference: 'displayPreference.json',
-	readerScriptUpdateRecord: 'readerScriptUpdateRecord.json'
+enum UserDataType {
+	DisplayPreference = 'displayPreference',
+	ReaderScriptUpdateRecord = 'readerScriptUpdateRecord'
+}
+
+type UserDataMap<T extends UserDataType> =
+	T extends UserDataType.DisplayPreference ? DisplayPreference | null :
+	T extends UserDataType.ReaderScriptUpdateRecord ? ScriptUpdateRecord | null :
+	never;
+
+interface UserData<T extends UserDataType> {
+	fileName: string,
+	data: UserDataMap<T>,
+	hasLoaded: boolean
+}
+
+const cache: {
+	[Key in UserDataType]: UserData<Key>
+} = {
+	[UserDataType.DisplayPreference]: {
+		fileName: 'displayPreference.json',
+		data: null,
+		hasLoaded: false
+	},
+	[UserDataType.ReaderScriptUpdateRecord]: {
+		fileName: 'readerScriptUpdateRecord.json',
+		data: null,
+		hasLoaded: false
+	}
 };
 
+async function getData<T extends UserDataType>(type: T): Promise<UserDataMap<T>> {
+	const entry = cache[type];
+	if (entry.hasLoaded) {
+		return entry.data as UserDataMap<T>;
+	}
+	try {
+		console.log('[user-data] reading data for type: ' + type);
+		entry.data = JSON.parse(
+			await fs.readFile(
+				getFilePath(entry.fileName),
+				{
+					encoding: 'utf8'
+				}
+			)
+		);
+		entry.hasLoaded = true;
+		return entry.data as UserDataMap<T>;
+	} catch (ex) {
+		return null as UserDataMap<T>;
+	}
+}
 function getFilePath(fileName: string) {
 	return path.join(
 		getUserDataDirectory(),
 		fileName
 	);
 }
-async function getFileData<T>(fileName: string) {
-	try {
-		return JSON.parse(
-			await fs.readFile(
-				getFilePath(fileName),
-				{
-					encoding: 'utf8'
-				}
-			)
-		) as T;
-	} catch (ex) {
-		return null;
-	}
-}
-async function setFileContents(fileName: string, contents: string) {
+async function setData<T extends UserDataType>(type: T, data: UserDataMap<T>) {
+	console.log('[user-data] writing data for type: ' + type);
+	const entry = cache[type];
+	entry.data = data;
+	entry.hasLoaded = true;
 	await fs.writeFile(
-		getFilePath(fileName),
-		contents
+		getFilePath(entry.fileName),
+		JSON.stringify(data)
 	);
 }
 function getUserDataDirectory( ){
@@ -44,12 +81,13 @@ function getUserDataDirectory( ){
 
 export const userData = {
 	getDisplayPreference: async () => {
-		return await getFileData<DisplayPreference>(fileNames.displayPreference);
+		return await getData(UserDataType.DisplayPreference);
 	},
 	getReaderScriptUpdateRecord: async () => {
-		return await getFileData<ScriptUpdateRecord>(fileNames.readerScriptUpdateRecord);
+		return await getData(UserDataType.ReaderScriptUpdateRecord);
 	},
 	initializeDirectories: async () => {
+		console.log('[user-data] initializing directories');
 		return fs.mkdir(
 			getUserDataDirectory(),
 			{
@@ -58,15 +96,9 @@ export const userData = {
 		);
 	},
 	setDisplayPreference: async (preference: DisplayPreference) => {
-		await setFileContents(
-			fileNames.displayPreference,
-			JSON.stringify(preference)
-		);
+		await setData(UserDataType.DisplayPreference, preference);
 	},
 	setReaderScriptUpdateRecord: async (record: ScriptUpdateRecord) => {
-		await setFileContents(
-			fileNames.readerScriptUpdateRecord,
-			JSON.stringify(record)
-		);
+		await setData(UserDataType.ReaderScriptUpdateRecord, record);
 	}
 };
