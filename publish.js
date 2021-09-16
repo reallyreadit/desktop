@@ -16,15 +16,7 @@ const argv = yargs(
 		'cert',
 		{
 			type: 'string',
-			description: 'The path to the certificate that will be used to sign the setup executable (--platform win32 only).',
-			requiresArg: true
-		}
-	)
-	.option(
-		'cert-pass',
-		{
-			type: 'string',
-			description: 'The password for the signing certificate  (--platform win32 only).',
+			description: 'The thumbprint of the certificate that will be used to sign the setup executable (--platform win32 only).',
 			requiresArg: true
 		}
 	)
@@ -64,11 +56,8 @@ const argv = yargs(
 	.help()
 	.argv;
 
-if (
-	argv.platform === 'win32' &&
-	!(argv.cert && argv['cert-pass'])
-) {
-	console.error('Code signing arguments --cert and --cert-pass are required when --platform is win32');
+if (argv.platform === 'win32' && !argv.cert) {
+	console.error('Code signing argument --cert is required when --platform is win32');
 	return;
 }
 
@@ -101,8 +90,7 @@ clean(buildOut)
 					return createLinuxInstaller();
 				case 'win32':
 					return createWindowsInstaller({
-						certFile: argv.cert,
-						certPassword: argv['cert-pass'],
+						certThumbprint: argv.cert,
 						configType: argv.config
 					});
 			}

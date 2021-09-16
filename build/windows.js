@@ -5,16 +5,13 @@ const { getConfig } = require('./config');
 
 module.exports = {
 	createInstaller: ({
-		certFile,
-		certPassword,
+		certThumbprint,
 		configType
 	}) => {
 		console.log('Starting electron-winstaller...');
 		const appConfig = getConfig(configType);
 		return winstaller.createWindowsInstaller({
 			appDirectory: path.join(packageOut, 'Readup-win32-x64'),
-			certificateFile: certFile,
-			certificatePassword: certPassword,
 			exe: 'Readup.exe',
 			iconUrl: 'https://static.dev.readup.com/app/images/favicon.ico',
 			loadingGif: path.resolve('content/images/electron-installation-tile-500.gif'),
@@ -22,7 +19,8 @@ module.exports = {
 			noMsi: true,
 			outputDirectory: installerOut,
 			remoteReleases: appConfig.autoUpdateFeedUrl,
-			setupIcon: path.resolve('content/windows/Readup.ico')
+			setupIcon: path.resolve('content/windows/Readup.ico'),
+			signWithParams: `/tr http://timestamp.sectigo.com /td sha256 /fd sha256 /sha1 ${certThumbprint}`
 		});
 	}
 };
