@@ -2,21 +2,14 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"type": "node",
+			"name": "Electron Main",
+			"program": ".",
 			"request": "launch",
-			"name": "Debug Main Process",
-			"cwd": "${workspaceFolder}",
 			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-			"windows": {
-				"type": "node",
-				"request": "launch",
-				"name": "Debug Main Process",
-				"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
-			},
-			"args": [
-				"."
+			"skipFiles": [
+				"<node_internals>/**"
 			],
-			"outputCapture": "std"
+			"type": "pwa-node"
 		}
 	]
 }
