@@ -1,4 +1,4 @@
-import { app, autoUpdater, BrowserView, BrowserWindow, shell } from 'electron';
+import { app, BrowserView, BrowserWindow, shell } from 'electron';
 import path from 'path';
 import { appConfig } from './appConfig';
 import { ArticleViewController } from './articleViewController';
@@ -9,7 +9,7 @@ import { OverlayState, OverlayStateType, OverlayViewController } from './overlay
 import { MessagingContext } from './messagingContext';
 import { AlertStatus } from './models/AlertStatus';
 import { AppActivationEvent } from './models/AppActivationEvent';
-import { AppPlatform, getAppPlatform } from './models/AppPlatform';
+import { getAppPlatform } from './models/AppPlatform';
 import { ArticleReference } from './models/ArticleReference';
 import { DeviceInfo } from './models/DeviceInfo';
 import { InitializationEvent } from './models/InitializationEvent';
@@ -23,6 +23,7 @@ import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
 import { DisplayTheme } from './models/DisplayPreference';
 import { ArticleReadOptions } from './models/ArticleReadOptions';
+import { appUpdates } from './appUpdates';
 
 const windowBackgroundColorMap: { [key in DisplayTheme]: string } = {
 	[DisplayTheme.Dark]: '#2a2326',
@@ -131,7 +132,7 @@ export class WebAppViewController {
 					);
 					break;
 				case 'installUpdate':
-					autoUpdater.quitAndInstall();
+					appUpdates.installUpdate();
 					break;
 				case 'openExternalUrl':
 				case 'openExternalUrlUsingSystem':
@@ -263,13 +264,12 @@ export class WebAppViewController {
 				await this.loadUrl(event.url);
 			}
 		);
-		autoUpdater.on(
-			'update-downloaded',
-			(event, releaseNotes, releaseName, releaseDate, updateURL) => {
+		appUpdates.addListener(
+			event => {
 				this._messagingContext.sendMessage({
 					type: 'updateAvailable',
 					data: {
-						releaseName
+						releaseName: event.releaseName
 					}
 				});
 			}
