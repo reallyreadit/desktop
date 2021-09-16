@@ -7,7 +7,7 @@ import { loadUrlFromArguments } from './routing/argvParser';
 import { createUrl } from './routing/HttpEndpoint';
 import { userData } from './userData';
 import { WebAppViewController } from './webAppViewController';
-import { DisplayTheme } from './models/DisplayPreference';
+import { DisplayTheme, getDisplayTheme } from './models/DisplayPreference';
 import { appUpdates } from './appUpdates';
 
 /**
@@ -40,9 +40,10 @@ if (
 				await userData.initializeDirectories();
 				await readerScript.initializeDirectories();
 				// Create main view controller.
-				const displayPreference = await userData.getDisplayPreference();
 				webAppViewController = new WebAppViewController({
-					displayTheme: displayPreference?.theme ?? DisplayTheme.Light
+					displayTheme: getDisplayTheme(
+						await userData.getDisplayPreference()
+					)
 				});
 				const argUrlResult = await loadUrlFromArguments(process.argv);
 				await webAppViewController.loadUrl(

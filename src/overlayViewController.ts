@@ -1,6 +1,7 @@
 import { app, BrowserView, ipcMain } from 'electron';
 import path from 'path';
-import { DisplayTheme } from './models/DisplayPreference';
+import { DisplayTheme, getDisplayTheme } from './models/DisplayPreference';
+import { userData } from './userData';
 
 export enum OverlayStateType {
 	None = 'None',
@@ -120,7 +121,7 @@ export class OverlayViewController {
 	public dispose() {
 		ipcMain.off(this._params.ipcChannel, this._processMessage);
 	}
-	public async initialize(state: OverlayState, displayTheme: DisplayTheme) {
+	public async initialize(state: OverlayState) {
 		console.log(`[overlay] initialize: ${state.type}`);
 		await this._view.webContents.loadFile(
 			path.join(
@@ -130,7 +131,10 @@ export class OverlayViewController {
 			{
 				query: {
 					'state': JSON.stringify(state),
-					'theme': displayTheme.toString()
+					'theme': getDisplayTheme(
+							await userData.getDisplayPreference()
+						)
+						.toString()
 				}
 			}
 		);

@@ -78,7 +78,6 @@ interface WebAppViewControllerParams {
 
 export class WebAppViewController {
 	private _articleViewController: ArticleViewController | undefined;
-	private _displayTheme: DisplayTheme;
 	private _hasEstablishedCommunication = false;
 	private readonly _overlayViewController = new OverlayViewController({
 		ipcChannel: 'overlay',
@@ -110,7 +109,7 @@ export class WebAppViewController {
 		onMessage: async (message, sendResponse) => {
 			switch (message.type) {
 				case 'displayPreferenceChanged':
-					this.setDisplayTheme(message.data.theme);
+					this.setOverlayDisplayTheme(message.data.theme);
 					await userData.setDisplayPreference(message.data);
 					break;
 				case 'getDeviceInfo':
@@ -186,7 +185,6 @@ export class WebAppViewController {
 	});
 	private readonly _window: BrowserWindow;
 	constructor(params: WebAppViewControllerParams) {
-		this._displayTheme = params.displayTheme;
 		this._window = new BrowserWindow({
 			width: defaultWindowSize.width,
 			height: defaultWindowSize.height,
@@ -292,8 +290,7 @@ export class WebAppViewController {
 	private detachView(view: BrowserView) {
 		this._window.removeBrowserView(view);
 	}
-	private setDisplayTheme(displayTheme: DisplayTheme) {
-		this._displayTheme = displayTheme;
+	private setOverlayDisplayTheme(displayTheme: DisplayTheme) {
 		this._overlayViewController.setDisplayTheme(displayTheme);
 	}
 	private setOverlayErrorState() {
@@ -346,7 +343,7 @@ export class WebAppViewController {
 			.toString();
 		console.log(`[webapp] load url: ${preparedUrl}`);
 		if (!this._overlayViewController.hasInitialized) {
-			await this._overlayViewController.initialize(this._overlayState, this._displayTheme);
+			await this._overlayViewController.initialize(this._overlayState);
 		}
 		if (this._hasEstablishedCommunication) {
 			this._messagingContext.sendMessage({
@@ -403,7 +400,7 @@ export class WebAppViewController {
 				});
 			},
 			onDisplayPreferenceChanged: preference => {
-				this.setDisplayTheme(preference.theme);
+				this.setOverlayDisplayTheme(preference.theme);
 				this._messagingContext.sendMessage({
 					type: 'displayPreferenceChanged',
 					data: preference
