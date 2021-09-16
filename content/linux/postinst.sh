@@ -9,8 +9,8 @@ case "$1" in
 		mkdir -p /usr/lib/mozilla/native-messaging-hosts
 
 		# Copy the manifest files.
-		cp /lib/readup/resources/app/content/linux/chrome/it.reallyread.mobile.browser_extension_app.json /etc/opt/chrome/native-messaging-hosts/
-		cp /lib/readup/resources/app/content/linux/firefox/it.reallyread.mobile.browser_extension_app.json /usr/lib/mozilla/native-messaging-hosts/
+		cp /usr/lib/readup/resources/app/content/linux/chrome/it.reallyread.mobile.browser_extension_app.json /etc/opt/chrome/native-messaging-hosts/
+		cp /usr/lib/readup/resources/app/content/linux/firefox/it.reallyread.mobile.browser_extension_app.json /usr/lib/mozilla/native-messaging-hosts/
 		;;
 esac
 
