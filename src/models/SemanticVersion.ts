@@ -2,11 +2,14 @@ export default class SemanticVersion {
 	public static greatest(...versions: SemanticVersion[]) {
 		return versions.sort((a, b) => b.compareTo(a))[0];
 	}
+	public static get regex() {
+		return /(\d+)\.(\d+)\.(\d+)/;
+	}
 	private readonly _major: number;
 	private readonly _minor: number;
 	private readonly _patch: number;
 	constructor(version: string) {
-		const match = version.match(/(\d+)\.(\d+)\.(\d+)/);
+		const match = version.match(SemanticVersion.regex);
 		if (!match) {
 			throw new Error('Invalid version format');
 		}
