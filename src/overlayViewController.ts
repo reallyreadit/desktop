@@ -88,6 +88,8 @@ export class OverlayViewController {
 	private _transitionState = TransitionState.None;
 	private readonly _view = new BrowserView({
 		webPreferences: {
+			// This needs to be disabled so that the transition animations are never delayed or stalled due to the page visibility state.
+			backgroundThrottling: false,
 			preload: path.resolve(
 				app.getAppPath(),
 				'content/views/overlay/preload.js'
