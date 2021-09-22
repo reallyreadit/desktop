@@ -1,6 +1,6 @@
 {
 	"name": "it.reallyread.mobile.browser_extension_app",
 	"description": "Readup Browser Extension App",
-	"path": "/lib/readup/resources/app/content/linux/BrowserExtensionApp",
+	"path": "/usr/lib/readup/resources/app/content/linux/BrowserExtensionApp",
 	"type": "stdio"
 }
