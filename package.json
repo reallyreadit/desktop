@@ -1,7 +1,7 @@
 {
   "name": "com.readup.desktop",
   "productName": "Readup",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Readup",
   "main": "bin/main.js",
   "scripts": {
