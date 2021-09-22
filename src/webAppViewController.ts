@@ -215,6 +215,98 @@ export class WebAppViewController {
 					event.preventDefault();
 				}
 			);
+		// Maximizing the window does not work in linux! No maximize event is triggered and although the window itself is resized, the
+		// visible content portion within it is not. This workaround attempts to detect a maximize event and force a resizing of the content
+		// portion by triggering multiple manual resize operations. As a result of this workaround we have to disable BrowserView auto-resizing
+		// and handle that manually as well.
+		if (process.platform === 'linux') {
+			type AutoResizeEvent = {
+				type: 'auto'
+			};
+			type InitialManualResizeEvent = {
+				type: 'initialManual',
+				finalBounds: {
+					width: number,
+					height: number
+				}
+			};
+			type FinalManualResizeEvent = {
+				type: 'finalManual'
+			};
+			let resizeEvent: AutoResizeEvent | InitialManualResizeEvent | FinalManualResizeEvent = {
+				type: 'auto'
+			};
+			this._window.on(
+				'resize',
+				() => {
+					const
+						bounds = this._window.getBounds(),
+						contentBounds = this._window.getContentBounds();
+					console.log(`[web-app] resize: ${bounds.width} x ${bounds.height} (bounds) ${contentBounds.width} x ${contentBounds.height} (contentBounds)`);
+					// Always synchronize the views with the window bounds since we can't use view auto-resizing with this workaround.
+					const viewBounds = {
+						x: 0,
+						y: 0,
+						width: bounds.width,
+						height: bounds.height
+					}
+					this._view.setBounds(viewBounds);
+					this._overlayViewController.view.setBounds(viewBounds);
+					this._articleViewController?.view.setBounds(viewBounds);
+					// Check why we're resizing.
+					switch (resizeEvent.type) {
+						case 'auto':
+							// When the window is maximized the contentBounds will be smaller than the bounds. That is our signal that we need to
+							// start the manual resize workaround. We can skip the workaround if the contentBounds is greater than or equal to the bounds.
+							if (
+								contentBounds.width >= bounds.width &&
+								contentBounds.height >= bounds.height
+							) {
+								return;
+							}
+							// If we just set the contentBounds = bounds then nothing will happen. We need to trigger a content resize by
+							// setting to a different size first.
+							const undersizedContentBounds = {
+								width: bounds.width - 1,
+								height: bounds.height - 1
+							};
+							console.log(`[web-app] initiating manual resize (${undersizedContentBounds.width} x ${undersizedContentBounds.height})`);
+							resizeEvent = {
+								type: 'initialManual',
+								finalBounds: bounds
+							};
+							this._window.setContentBounds({
+								x: 0,
+								y: 0,
+								width: undersizedContentBounds.width,
+								height: undersizedContentBounds.height
+							});
+							break;
+						case 'initialManual':
+							// In this stage we just trigger a second content resize, this time to the final bounds that should have been
+							// set in the first place.
+							const finalBounds = resizeEvent.finalBounds;
+							console.log(`[web-app] finalizing manual resize (${finalBounds.width} x ${finalBounds.height})`);
+							resizeEvent = {
+								type: 'finalManual'
+							};
+							this._window.setContentBounds({
+								x: 0,
+								y: 0,
+								width: finalBounds.width,
+								height: finalBounds.height
+							});
+							break;
+						case 'finalManual':
+							// Reset the event type to auto now that the manual process is complete. 
+							resizeEvent = {
+								type: 'auto'
+							};
+							break;
+					}
+				}
+			);
+		}
 		this._view.webContents
 			.on(
 				'did-start-navigation',
@@ -282,10 +374,13 @@ export class WebAppViewController {
 			width: windowBounds.width,
 			height: windowBounds.height
 		});
-		view.setAutoResize({
-			height: true,
-			width: true
-		});
+		// Auto-resizing cannot be used in Linux due to the maximizing bug described above in the window resize handler.
+		if (process.platform !== 'linux') {
+			view.setAutoResize({
+				height: true,
+				width: true
+			});
+		}
 	}
 	private detachView(view: BrowserView) {
 		this._window.removeBrowserView(view);
