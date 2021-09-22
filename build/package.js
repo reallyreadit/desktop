@@ -103,6 +103,7 @@ module.exports = {
 				/^\/config\.[^.]+\.json/,
 				/^\/package\.js$/,
 				/^\/publish\.js$/,
+				/^\/readme\.md$/,
 				/^\/tsconfig\.json/,
 				...platformOptions[platform].ignoreList
 			],
