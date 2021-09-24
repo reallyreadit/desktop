@@ -24,6 +24,7 @@ import { userData } from './userData';
 import { DisplayTheme } from './models/DisplayPreference';
 import { ArticleReadOptions } from './models/ArticleReadOptions';
 import { appUpdates } from './appUpdates';
+import { handleWindowOpen } from './navigation';
 
 const windowBackgroundColorMap: { [key in DisplayTheme]: string } = {
 	[DisplayTheme.Dark]: '#2a2326',
@@ -340,6 +341,7 @@ export class WebAppViewController {
 					this.setOverlayErrorState();
 				}
 			);
+		this._view.webContents.setWindowOpenHandler(handleWindowOpen);
 		notifications.addAlertStatusListener(
 			event => {
 				this._messagingContext.sendMessage({

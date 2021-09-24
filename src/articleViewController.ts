@@ -30,6 +30,7 @@ import { OverlayState, OverlayStateType } from './overlayViewController';
 import { getAppPlatform } from './models/AppPlatform';
 import { appConfig } from './appConfig';
 import { ArticleReadOptions } from './models/ArticleReadOptions';
+import { handleWindowOpen } from './navigation';
 
 export interface ArticleViewControllerParams {
 	onArticlePosted: (post: Post) => void,
@@ -393,6 +394,7 @@ export class ArticleViewController {
 					});
 				}
 			);
+		this._view.webContents.setWindowOpenHandler(handleWindowOpen);
 	}
 	private setOverlayErrorState(message: string) {
 		this.setOverlayState({
