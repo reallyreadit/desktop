@@ -298,7 +298,7 @@ export class WebAppViewController {
 							});
 							break;
 						case 'finalManual':
-							// Reset the event type to auto now that the manual process is complete. 
+							// Reset the event type to auto now that the manual process is complete.
 							resizeEvent = {
 								type: 'auto'
 							};
