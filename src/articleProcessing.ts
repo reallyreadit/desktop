@@ -32,34 +32,10 @@ const imageRemovalTagReplacement = {
 	replaceValue: ""
 };
 
-function processArticleContent(content: string) {
-	const tagReplacements = [
-		// remote scripts must be disabled first!
-		remoteScriptDisablingTagReplacement,
-		localScriptDisablingTagReplacement,
-		iframeRemovalTagReplacement,
-		inlineStyleRemovalTagReplacement,
-		linkedStyleRemovalTagReplacement,
-		viewportMetaTagReplacement
-	];
-	for (const tagReplacement of tagReplacements) {
-		content = content.replaceAll(
-			new RegExp(tagReplacement.searchValue, 'g'),
-			tagReplacement.replaceValue
-		);
-	}
-	return content;
-}
+type RequestPreProcessor = (url: URL, headers: Headers, cookieJar: CookieJar) => void;
 
-export async function fetchArticle(url: URL) {
-	// use desktop user agent
-	const headers: Headers = {
-		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'
-	};
-	// Use a temporary/per-request cookie jar.
-	const cookieJar = new CookieJar();
-	// special host handling
-	if (url.hostname == "www.npr.org" || url.hostname == "npr.org") {
+const hostSpecificRequestPreProcessors: { [key: string]: RequestPreProcessor } = {
+	'npr.org': (url, _, cookieJar) => {
 		cookieJar.setCookieSync(
 			new Cookie({
 				domain: url.hostname,
@@ -89,9 +65,42 @@ export async function fetchArticle(url: URL) {
 			}),
 			url.href
 		);
-	}
-	if (url.hostname == "www.wsj.com" || url.hostname == "wsj.com") {
+	},
+	'wsj.com': (_, headers) => {
 		headers['Referer'] = "https://drudgereport.com/";
+	}
+};
+
+function processArticleContent(content: string) {
+	const tagReplacements = [
+		// remote scripts must be disabled first!
+		remoteScriptDisablingTagReplacement,
+		localScriptDisablingTagReplacement,
+		iframeRemovalTagReplacement,
+		inlineStyleRemovalTagReplacement,
+		linkedStyleRemovalTagReplacement,
+		viewportMetaTagReplacement
+	];
+	for (const tagReplacement of tagReplacements) {
+		content = content.replaceAll(
+			new RegExp(tagReplacement.searchValue, 'g'),
+			tagReplacement.replaceValue
+		);
+	}
+	return content;
+}
+
+export async function fetchArticle(url: URL) {
+	// use desktop user agent
+	const headers: Headers = {
+		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'
+	};
+	// Use a temporary/per-request cookie jar.
+	const cookieJar = new CookieJar();
+	// special host handling
+	const preProcessor = hostSpecificRequestPreProcessors[url.hostname.replace(/^www\./, '')];
+	if (preProcessor) {
+		preProcessor(url, headers, cookieJar);
 	}
 	// initiate request
 	const content = await got
