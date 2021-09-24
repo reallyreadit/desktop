@@ -66,6 +66,17 @@ const hostSpecificRequestPreProcessors: { [key: string]: RequestPreProcessor } =
 			url.href
 		);
 	},
+	'washingtonpost.com': (url, _, cookieJar) => {
+		cookieJar.setCookieSync(
+			new Cookie({
+				domain: url.hostname,
+				path: '/',
+				key: 'wp_gdpr',
+				value: '1|1'
+			}),
+			url.href
+		);
+	},
 	'wsj.com': (_, headers) => {
 		headers['Referer'] = "https://drudgereport.com/";
 	}
