@@ -417,6 +417,14 @@ export class WebAppViewController {
 	}
 	private setTopBrowserView(view: BrowserView) {
 		this._window.setTopBrowserView(view);
+		/**
+		 * setTopBrowserView stopped working after updating from 13.1.8 to 13.5.1
+		 * The view isn't actually moved to the top until the window is resized.
+		 * As a workaround we can trigger a resize by calling setSize.
+		 */
+		const size = this._window.getSize();
+		this._window.setSize(size[0] - 1, size[1] - 1);
+		this._window.setSize(size[0], size[1]);
 	}
 	public closeReader() {
 		if (!this._articleViewController) {
