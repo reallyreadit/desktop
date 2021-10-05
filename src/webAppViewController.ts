@@ -195,7 +195,8 @@ export class WebAppViewController {
 		});
 		this.attachView(this._view);
 		this.attachView(this._overlayViewController.view);
-		this.setTopBrowserView(this._view);
+		// The initial overlay state is Loading so the overlay view controller should start out as the top view.
+		this.setTopBrowserView(this._overlayViewController.view);
 		this._window
 			.on(
 				'focus',
