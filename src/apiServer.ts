@@ -1,5 +1,6 @@
-import got, { OptionsOfTextResponseBody } from 'got';
+import got, { CancelableRequest, HTTPError, OptionsOfTextResponseBody, Response } from 'got';
 import { appConfig } from './appConfig';
+import { HttpProblemDetails } from './models/ProblemDetails';
 import { createUrl } from './routing/HttpEndpoint';
 import { sharedCookieStore } from './sharedCookieStore';
 
@@ -43,23 +44,45 @@ async function createPostOptions<T>(data?: T) {
 	}
 	return options;
 }
+function processError<T>(reason: any): Promise<T> {
+	let problemDetails: HttpProblemDetails | undefined;
+	if (
+		reason instanceof HTTPError &&
+		reason.response.headers['content-type']?.startsWith('application/problem+json') &&
+		typeof reason.response.body === 'string'
+	) {
+		try {
+			problemDetails = JSON.parse(reason.response.body)
+		} catch { }
+	}
+	throw problemDetails ?? reason ?? new Error('An unexpected API server error occurred.');
+}
 
 export const apiServer = {
 	get: async (path: string, queryItems?: GotSearchParams, options?: Options) => await got
 		.get(
 			createApiServerUrl(path),
 			await createGetOptions(queryItems, options)
+		)
+		.catch(
+			reason => processError<CancelableRequest<Response<string>>>(reason)
 		),
 	getJson: async <T>(path: string, queryItems?: GotSearchParams) => await got
 		.get(
 			createApiServerUrl(path),
 			await createGetOptions(queryItems)
 		)
-		.json<T>(),
+		.json<T>()
+		.catch(
+			reason => processError<T>(reason)
+		),
 	post: async <T>(path: string, data?: T) => await got
 		.post(
 			createApiServerUrl(path),
 			await createPostOptions(data)
+		)
+		.catch(
+			reason => processError<CancelableRequest<Response<string>>>(reason)
 		),
 	postJson: async <TData, TResult>(path: string, data?: TData) => await got
 		.post(
@@ -67,4 +90,7 @@ export const apiServer = {
 			await createPostOptions(data)
 		)
 		.json<TResult>()
+		.catch(
+			reason => processError<TResult>(reason)
+		)
 };
