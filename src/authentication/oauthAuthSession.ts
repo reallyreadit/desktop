@@ -18,26 +18,14 @@ export function presentOauthAuthSession(request: WebAuthRequest) {
 				});
 			};
 			authWindow.on('closed', cancel);
-			authWindow.webContents.session.webRequest.onHeadersReceived(
-				(details, callback) => {
-					const responseHeaders = details.responseHeaders;
-					let
-						locationHeaderValues: string[] | undefined,
-						locationUrl: string | undefined;
-					if (
-						responseHeaders &&
-						(locationHeaderValues = responseHeaders['location']) &&
-						(locationUrl = locationHeaderValues[0]) &&
-						locationUrl.startsWith('readup:')
-					) {
-						authWindow.off('closed', cancel);
-						authWindow.close();
-						resolve({
-							callbackURL: locationUrl
-						});
-					} else {
-						callback({});
-					}
+			authWindow.webContents.session.protocol.registerHttpProtocol(
+				'readup',
+				request => {
+					authWindow.off('closed', cancel);
+					authWindow.close();
+					resolve({
+						callbackURL: request.url
+					});
 				}
 			);
 			authWindow.loadURL(request.authUrl);
