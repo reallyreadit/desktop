@@ -8,7 +8,8 @@ export function presentAppleIdAuthSession() {
 		height: 600,
 		webPreferences: {
 			partition: 'apple-id'
-		}
+		},
+		autoHideMenuBar: true
 	});
 	const redirectUrl = 'https://api.readup.com/Auth/AppleWeb';
 	// can't use URLSearchParams here because apple requires spaces be

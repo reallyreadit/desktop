@@ -7,7 +7,8 @@ export function presentExternalUrlSession(url: string) {
 		height: 600,
 		webPreferences: {
 			partition: 'external'
-		}
+		},
+		autoHideMenuBar: true
 	});
 	return new Promise<ExternalUrlCompletionEvent>(
 		resolve => {

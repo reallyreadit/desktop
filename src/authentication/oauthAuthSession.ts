@@ -7,7 +7,8 @@ export function presentOauthAuthSession(request: WebAuthRequest) {
 		height: 600,
 		webPreferences: {
 			partition: 'oauth'
-		}
+		},
+		autoHideMenuBar: true
 	});
 	return new Promise<WebAuthResponse>(
 		resolve => {
