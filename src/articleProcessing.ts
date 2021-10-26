@@ -102,9 +102,20 @@ function processArticleContent(content: string) {
 }
 
 export async function fetchArticle(url: URL) {
-	// use desktop user agent
+	// impersonate chrome on windows 10 desktop
 	const headers: Headers = {
-		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'
+		'sec-ch-ua': '"Chromium";v="94", "Google Chrome";v="94", ";Not A Brand";v="99"',
+		'sec-ch-ua-mobile': '?0',
+		'sec-ch-ua-platform': '"Windows"',
+		'Upgrade-Insecure-Requests': '1',
+		'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36',
+		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+		'Sec-Fetch-Site': 'none',
+		'Sec-Fetch-Mode': 'navigate',
+		'Sec-Fetch-User': '?1',
+		'Sec-Fetch-Dest': 'document',
+		'Accept-Encoding': 'gzip, deflate, br',
+		'Accept-Language': 'en-US,en;q=0.9'
 	};
 	// Use a temporary/per-request cookie jar.
 	const cookieJar = new CookieJar();
