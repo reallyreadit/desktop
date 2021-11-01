@@ -5,15 +5,9 @@ const viewportMetaTagReplacement = {
 	searchValue: "<meta([^>]*)name=(['\"])viewport\\2([^>]*)>",
 	replaceValue: "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover\">"
 };
-// this replacement should be called first since the local replacement
-// looks at the type to avoid reprocessing and losing the src data
-const remoteScriptDisablingTagReplacement = {
-	searchValue: "<script\\b[^>]*\\bsrc=(['\"])([^'\"]+)\\1[^>]*>[^<]*(?:(?!</script>)<[^<]*)*</script>",
-	replaceValue: "<script type=\"text/x-readup-disabled-javascript\" data-src=\"$2\"></script>"
-};
-const localScriptDisablingTagReplacement = {
-	searchValue: "<script\\b(?:[^>](?!\\btype=(['\"])(application/(ld\\+)?json|text/x-readup-disabled-javascript)\\1))*>([^<]*(?:(?!</script>)<[^<]*)*)</script>",
-	replaceValue: "<script type=\"text/x-readup-disabled-javascript\">$4</script>"
+const scriptRemovalTagReplacement = {
+	searchValue: "<script\\b(?:[^>](?!\\btype=(['\"])application/(ld\\+)?json\\1))*>([^<]*(?:(?!</script>)<[^<]*)*)</script>",
+	replaceValue: ""
 };
 const iframeRemovalTagReplacement = {
 	searchValue: "<iframe\\b[^<]*(?:(?!</iframe>)<[^<]*)*</iframe>",
@@ -84,9 +78,7 @@ const hostSpecificRequestPreProcessors: { [key: string]: RequestPreProcessor } =
 
 function processArticleContent(content: string) {
 	const tagReplacements = [
-		// remote scripts must be disabled first!
-		remoteScriptDisablingTagReplacement,
-		localScriptDisablingTagReplacement,
+		scriptRemovalTagReplacement,
 		iframeRemovalTagReplacement,
 		inlineStyleRemovalTagReplacement,
 		linkedStyleRemovalTagReplacement,
