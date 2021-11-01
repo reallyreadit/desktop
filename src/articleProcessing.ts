@@ -2,11 +2,11 @@ import got, { Headers } from 'got';
 import { Cookie, CookieJar } from 'tough-cookie';
 
 const viewportMetaTagReplacement = {
-	searchValue: "<meta([^>]*)name=(['\"])viewport\\2([^>]*)>",
+	searchValue: "<meta[^>]*name=(['\"])viewport\\1[^>]*>",
 	replaceValue: "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover\">"
 };
 const scriptRemovalTagReplacement = {
-	searchValue: "<script\\b(?:[^>](?!\\btype=(['\"])(application/(ld\\+)?json|text/template)\\1))*>([^<]*(?:(?!</script>)<[^<]*)*)</script>",
+	searchValue: "<script\\b(?:[^>](?!\\btype=(['\"])(?:application/(?:ld\\+)?json|text/template)\\1))*>[^<]*(?:(?!</script>)<[^<]*)*</script>",
 	replaceValue: ""
 };
 const iframeRemovalTagReplacement = {
