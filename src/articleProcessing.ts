@@ -21,10 +21,6 @@ const linkedStyleRemovalTagReplacement = {
 	searchValue: "<link\\b[^>]*\\brel=(\\\\?)(['\"])stylesheet\\1\\2[^>]*>",
 	replaceValue: ""
 };
-const imageRemovalTagReplacement = {
-	searchValue: "<img\\b[^>]*>",
-	replaceValue: ""
-};
 
 type RequestPreProcessor = (url: URL, headers: Headers, cookieJar: CookieJar) => void;
 
