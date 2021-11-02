@@ -10,7 +10,7 @@ const scriptRemovalTagReplacement = {
 	replaceValue: ""
 };
 const iframeRemovalTagReplacement = {
-	searchValue: "<iframe\\b[^<]*(?:(?!<\\\\?/iframe>)<[^<]*)*<\\\\?/iframe>",
+	searchValue: "<iframe\\b[^>]*>(?:\\s*<\\\\?/iframe>)?",
 	replaceValue: ""
 };
 const inlineStyleRemovalTagReplacement = {
