@@ -11,7 +11,7 @@
 		"edge": "",
 		"firefox": ""
 	},
-	"readerScriptVersion": "14.0.1",
+	"readerScriptVersion": "14.0.2",
 	"staticServer": {
 		"protocol": "https",
 		"host": "static.dev.readup.com"

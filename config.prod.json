@@ -11,7 +11,7 @@
 		"edge": "nnnlnihiejbbkikldbfeeefljhpplhcm",
 		"firefox": "{20f866de-c377-49f8-be05-4c16fb5afdb9}"
 	},
-	"readerScriptVersion": "14.0.1",
+	"readerScriptVersion": "14.0.2",
 	"staticServer": {
 		"protocol": "https",
 		"host": "static.readup.com"
