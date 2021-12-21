@@ -1,0 +1,23 @@
+{
+	"apiServer": {
+		"protocol": "https",
+		"host": "api.readup.com"
+	},
+	"authCookieDomain": ".readup.com",
+	"authCookieName": "sessionKey",
+	"autoUpdateFeedUrl": "https://static.readup.com/downloads/windows",
+	"extensionIds": {
+		"chrome": "mkeiglkfdfamdjehidenkklibndmljfi",
+		"edge": "nnnlnihiejbbkikldbfeeefljhpplhcm",
+		"firefox": "{20f866de-c377-49f8-be05-4c16fb5afdb9}"
+	},
+	"readerScriptVersion": "14.0.1",
+	"staticServer": {
+		"protocol": "https",
+		"host": "static.readup.com"
+	},
+	"webServer": {
+		"protocol": "https",
+		"host": "readup.com"
+	}
+}

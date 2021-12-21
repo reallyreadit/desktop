@@ -1,0 +1,23 @@
+{
+	"apiServer": {
+		"protocol": "https",
+		"host": "api.dev.readup.com"
+	},
+	"authCookieDomain": ".dev.readup.com",
+	"authCookieName": "devSessionKey",
+	"autoUpdateFeedUrl": "https://static.dev.readup.com/downloads/windows",
+	"extensionIds": {
+		"chrome": "",
+		"edge": "",
+		"firefox": ""
+	},
+	"readerScriptVersion": "14.0.1",
+	"staticServer": {
+		"protocol": "https",
+		"host": "static.dev.readup.com"
+	},
+	"webServer": {
+		"protocol": "https",
+		"host": "dev.readup.com"
+	}
+}
