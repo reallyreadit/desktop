@@ -2,3 +2,5 @@
 /node_modules
 /pkg
 /pub
+*.swp
+*.snap

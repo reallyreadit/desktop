@@ -1,0 +1,59 @@
+name: readup
+version: '1.0.6'
+summary: A little description for the app.
+description: The world's best reading app. 
+grade: stable
+# confinement: classic
+confinement: devmode
+base: core18
+
+parts:
+  readup:
+    plugin: dump
+    source: ./pkg/readup_1.0.6_amd64.deb
+    source-type: deb
+    stage-packages:
+      - libasound2
+      - libnotify4
+      - libnspr4
+      - libnss3
+      - libpcre3
+      - libpulse0
+      - libxss1
+      - libxtst6
+    override-pull: |
+      snapcraftctl pull
+      cd usr/lib/readup/resources/app/content/linux/
+      # point the native messaging manifests to the readup.browserextension app exposed by this snap
+      sed -ri 's/\/usr\/lib\/readup\/resources\/app\/content\/linux\/BrowserExtensionApp/\/snap\/bin\/readup.browserextensionapp/' firefox/it.reallyread.mobile.browser_extension_app.json
+      sed -ri 's/\/usr\/lib\/readup\/resources\/app\/content\/linux\/BrowserExtensionApp/\/snap\/bin\/readup.browserextensionapp/' chrome/it.reallyread.mobile.browser_extension_app.json
+      # make the browser ext app world-readable and executable (required) 
+      chmod a+rx BrowserExtensionApp
+      # restore cwd
+      cd ../../../../../../..
+      # fix the .desktop icon reference to be relative to the prime dir (https://forum.snapcraft.io/t/desktop-files-for-menu-integration/13115#heading--desktop-key)
+      sed -ri 's|Icon=readup|Icon=/usr/lib/readup/resources/app/content/images/icon.svg|g' usr/share/applications/readup.desktop
+
+plugs:
+  native-messaging-integration:
+    interface: system-files
+    read:
+    - /var/lib/snapd/hostfs/usr/lib/mozilla/native-messaging-hosts
+    write:
+    - /var/lib/snapd/hostfs/usr/lib/mozilla/native-messaging-hosts/touchy
+    - /var/lib/snapd/hostfs/usr/lib/mozilla/native-messaging-hosts/it.reallyread.mobile.browser_extension_app.json
+
+hooks:
+  configure:
+    plugs: [native-messaging-integration]
+apps:
+  readup:
+    extensions: [gnome-3-34]
+    command: "bin/desktop-launch $SNAP/usr/lib/readup/Readup"
+    desktop: usr/share/applications/readup.desktop
+    # Correct the TMPDIR path for Chromium Framework/Electron to ensure
+    # libappindicator has readable resources.
+    environment:
+      TMPDIR: $XDG_RUNTIME_DIR
+  browserextensionapp:
+    command: usr/lib/readup/resources/app/content/linux/BrowserExtensionApp
