@@ -24,9 +24,15 @@ parts:
     override-pull: |
       snapcraftctl pull
       cd usr/lib/readup/resources/app/content/linux/
+      # point the native messaging manifests to the readup.browserextension app exposed by this snap
       sed -ri 's/\/usr\/lib\/readup\/resources\/app\/content\/linux\/BrowserExtensionApp/\/snap\/bin\/readup.browserextensionapp/' firefox/it.reallyread.mobile.browser_extension_app.json
       sed -ri 's/\/usr\/lib\/readup\/resources\/app\/content\/linux\/BrowserExtensionApp/\/snap\/bin\/readup.browserextensionapp/' chrome/it.reallyread.mobile.browser_extension_app.json
+      # make the browser ext app world-readable and executable (required) 
       chmod a+rx BrowserExtensionApp
+      # restore cwd
+      cd ../../../../../../..
+      # fix the .desktop icon reference to be relative to the prime dir (https://forum.snapcraft.io/t/desktop-files-for-menu-integration/13115#heading--desktop-key)
+      sed -ri 's|Icon=readup|Icon=/usr/lib/readup/resources/app/content/images/icon.svg|g' usr/share/applications/readup.desktop
 
 plugs:
   native-messaging-integration:
