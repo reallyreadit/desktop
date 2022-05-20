@@ -388,7 +388,7 @@ export class ArticleViewController {
 						id: 'article',
 						message: [
 							'Check your internet connection and try again.',
-							'Please contact support@readup.com if this problem persists.'
+							'Drop us a line in our Discord if this problem persists.'
 						],
 						buttonText: 'Go Back'
 					});
